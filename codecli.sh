@@ -32,33 +32,35 @@ bantuan() {
     echo
     echo "Commands List:"
     echo "create"
-    echo "  systemd     : Create a new systemctl workspace"
-    echo "  systemdlimit: Create a new systemctl workspace with limited RAM"
-    echo "  docker      : Create a new docker container"
-    echo "  dockerlimit : Create a new docker container with limited RAM and CPU"
+    echo "  systemd           : Create a new systemctl workspace"
+    echo "  systemdlimit      : Create a new systemctl workspace with limited RAM"
+    echo "  docker            : Create a new docker container"
+    echo "  dockerlimit       : Create a new docker container with limited RAM and CPU"
+    echo "  systemdbeta       : Create a new systemctl workspace with code-server (Beta version - for testing only!)"
+    echo "  systemdlimitbeta  : Create a new systemctl workspace with limited RAM and code-server (Beta version - for testing only!)"
     echo "manage"
     echo "  systemctl"
-    echo "    delete    : Delete workspace"
-    echo "    status    : Show workspace status"
-    echo "    restart   : Restart workspace"
-    echo "    password  : Change user password"
-    echo "    schedule  : Schedule workspace deletion"
-    echo "    scheduled : Show scheduled workspace deletion"
-    echo "    convert   : Convert user to superuser"
+    echo "    delete          : Delete workspace"
+    echo "    status          : Show workspace status"
+    echo "    restart         : Restart workspace"
+    echo "    password        : Change user password"
+    echo "    schedule        : Schedule workspace deletion"
+    echo "    scheduled       : Show scheduled workspace deletion"
+    echo "    convert         : Convert user to superuser"
     echo "  docker"
-    echo "    delete    : Delete docker container"
-    echo "    status    : Show container status"
-    echo "    restart   : Restart (all) running containers"
-    echo "    password  : Change user password, port & update limited RAM and CPU for dockerlimit"
-    echo "    schedule  : Schedule container deletion"
-    echo "    scheduled : Show scheduled container deletion"
-    echo "    list      : Show docker container lists"
-    echo "    configure : Stop, start or restart running container"
-    echo "    start     : Start docker daemon service"
-    echo "port          : Show used port lists"
-    echo "backup        : Backup workspace data with rclone in one archive"
-    echo "help          : Show help"
-    echo "version       : Show version"
+    echo "    delete          : Delete docker container"
+    echo "    status          : Show container status"
+    echo "    restart         : Restart (all) running containers"
+    echo "    password        : Change user password, port & update limited RAM and CPU for dockerlimit"
+    echo "    schedule        : Schedule container deletion"
+    echo "    scheduled       : Show scheduled container deletion"
+    echo "    list            : Show docker container lists"
+    echo "    configure       : Stop, start or restart running container"
+    echo "    start           : Start docker daemon service"
+    echo "port                : Show used port lists"
+    echo "backup              : Backup workspace data with rclone in one archive"
+    echo "help                : Show help"
+    echo "version             : Show version"
     echo
     echo "Copyright (c) 2024 codecli (under MIT License)"
     echo "Built with love♡ by gvoze32"
@@ -239,6 +241,131 @@ cd
 else
 echo "Workspace directory not found"
 fi
+}
+
+createnewsystemdbeta(){
+if [ "$(id -u)" != "0" ]; then
+    echo "This script must be run as root" 1>&2
+    return 1
+fi
+
+read -p "Username : " user
+read -s -p "Password : " password
+echo
+read -p "Port : " port
+
+apt-get update -y
+apt-get upgrade -y
+
+sudo adduser --disabled-password --gecos "" $user
+sudo echo -e "$password\n$password" | passwd $user
+
+sudo chown -R $user:$user /home/$user
+
+sudo -u $user mkdir ~/code-server
+sudo -u $user cd ~/code-server
+sudo -u $user wget https://github.com/coder/code-server/releases/download/v4.90.3/code-server-4.90.3-linux-amd64.tar.gz
+sudo -u $user tar -xzvf code-server-4.90.3-linux-amd64.tar.gz
+sudo -u $user sudo cp -r code-server-4.90.3-linux-amd64 /usr/lib/code-server
+sudo -u $user sudo ln -s /usr/lib/code-server/bin/code-server /usr/bin/code-server
+sudo -u $user sudo mkdir /var/lib/code-server
+
+sudo chmod 700 /home/$user/ -R
+
+cat > /lib/systemd/system/code-$user.service << EOF
+[Unit]
+Description=code-server for $user
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/code-server --bind-addr 0.0.0.0:$port --user-data-dir /var/lib/code-server --auth password
+User=$user
+Group=$user
+
+UMask=0002
+Restart=on-failure
+
+WorkingDirectory=/home/$user/workspace
+Environment=PASSWORD=$password
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=code-$user
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable code-$user.service
+systemctl restart code-$user.service
+sleep 10
+systemctl status code-$user.service
+}
+
+createnewsystemdlimit(){
+if [ "$(id -u)" != "0" ]; then
+    echo "This script must be run as root" 1>&2
+    return 1
+fi
+
+read -p "Username : " user
+read -s -p "Password : " password
+echo
+read -p "Memory Limit (Example = 1G) : " mem
+read -p "Port : " port
+
+apt-get update -y
+apt-get upgrade -y
+
+sudo adduser --disabled-password --gecos "" $user
+sudo echo -e "$password\n$password" | passwd $user
+
+sudo chown -R $user:$user /home/$user
+
+sudo -u $user mkdir ~/code-server
+sudo -u $user cd ~/code-server
+sudo -u $user wget https://github.com/coder/code-server/releases/download/v4.90.3/code-server-4.90.3-linux-amd64.tar.gz
+sudo -u $user tar -xzvf code-server-4.90.3-linux-amd64.tar.gz
+sudo -u $user sudo cp -r code-server-4.90.3-linux-amd64 /usr/lib/code-server
+sudo -u $user sudo ln -s /usr/lib/code-server/bin/code-server /usr/bin/code-server
+sudo -u $user sudo mkdir /var/lib/code-server
+
+sudo chmod 700 /home/$user/ -R
+
+cat > /lib/systemd/system/code-$user.service << EOF
+[Unit]
+Description=code-server for $user
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/code-server --bind-addr 0.0.0.0:$port --user-data-dir /var/lib/code-server --auth password
+User=$user
+Group=$user
+
+UMask=0002
+MemoryMax=$mem
+
+Restart=on-failure
+
+WorkingDirectory=/home/$user/workspace
+Environment=PASSWORD=$password
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=code-$user
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable code-$user.service
+systemctl restart code-$user.service
+sleep 10
+systemctl status code-$user.service
 }
 
 # MANAGE SYSTEMCTL
@@ -622,6 +749,11 @@ create)
     dockerlimit)
       createnewdockermemlimit
     ;;
+    systemdbeta)
+      createnewsystemdbeta
+    ;;
+    systemdlimitbeta)
+      createnewsystemdlimitbeta
     *)
       echo "Command not found, type codecli help for help"
   esac
