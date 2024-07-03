@@ -84,7 +84,7 @@ sudo adduser --disabled-password --gecos "" $user
 sudo echo -e "$password\n$password" | passwd $user
 
 mkdir -p /home/$user/my-projects
-sudo chown $user:$user /home/$user -R
+sudo chown -R $user:$user /home/$user
 
 sudo -u $user -H sh -c "curl -fsSL https://code-server.dev/install.sh | sh"
 
@@ -143,7 +143,7 @@ sudo adduser --disabled-password --gecos "" $user
 sudo echo -e "$password\n$password" | passwd $user
 
 mkdir -p /home/$user/my-projects
-sudo chown $user:$user /home/$user -R
+sudo chown -R $user:$user /home/$user
 
 sudo -u $user -H sh -c "curl -fsSL https://code-server.dev/install.sh | sh"
 
