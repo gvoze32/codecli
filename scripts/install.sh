@@ -52,7 +52,7 @@ services:
     volumes:
       - /home/codeusers/\${NAMA_PELANGGAN}:/workspace
     ports:
-      - "0.0.0.0:\${PORT}:\${PORT}"
+      - \${PORT}:8443
     restart: unless-stopped
 EOF
 }
@@ -74,7 +74,7 @@ services:
     volumes:
       - /home/codeusersmemlimit/\${NAMA_PELANGGAN}:/workspace
     ports:
-      - "0.0.0.0:\${PORT}:\${PORT}"
+      - \${PORT}:8443
     restart: unless-stopped
     deploy:
       resources:
