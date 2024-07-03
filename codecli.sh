@@ -206,7 +206,7 @@ cd /home/codeusers/$user
 
 cd
 else
-echo "Workspace directory not found"
+echo -e "\033[33mWARN! Workspace directory not found - Ignore this message if you are not adding default bundling files\033[0m"
 fi
 }
 
@@ -239,7 +239,7 @@ cd /home/codeusersmemlimit/$user
 
 cd
 else
-echo "Workspace directory not found"
+echo -e "\033[33mWARN! Workspace directory not found - Ignore this message if you are not adding default bundling files\033[0m"
 fi
 }
 
