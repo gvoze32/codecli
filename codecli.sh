@@ -754,6 +754,7 @@ create)
     ;;
     systemdlimitbeta)
       createnewsystemdlimitbeta
+    ;;
     *)
       echo "Command not found, type codecli help for help"
   esac
