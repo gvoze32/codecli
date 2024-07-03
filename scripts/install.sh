@@ -41,16 +41,16 @@ install_docker() {
 services:
   code-server:
     image: lscr.io/linuxserver/code-server:latest
-    container_name: code-server
+    container_name: code-server-\${NAMA_PELANGGAN}
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Asia/Jakarta
       - PASSWORD=\${PASSWORD_PELANGGAN}
       - SUDO_PASSWORD=\${PASSWORD_PELANGGAN}
-      - DEFAULT_WORKSPACE=/home/c9users/\${NAMA_PELANGGAN}:/workspace
+      - DEFAULT_WORKSPACE=/home/codeusers/\${NAMA_PELANGGAN}:/workspace
     volumes:
-      - /home/c9users/\${NAMA_PELANGGAN}:/workspace
+      - /home/codeusers/\${NAMA_PELANGGAN}:/workspace
     ports:
       - 0.0.0.0:\${PORT}:\${PORT}
     restart: unless-stopped
@@ -63,7 +63,7 @@ install_docker_memlimit() {
 services:
   code-server:
     image: lscr.io/linuxserver/code-server:latest
-    container_name: code-server
+    container_name: code-server-\${NAMA_PELANGGAN}
     environment:
       - PUID=1000
       - PGID=1000
