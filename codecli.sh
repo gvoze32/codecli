@@ -188,6 +188,7 @@ read -p "Username : " user
 read -s -p "Password : " pw
 echo
 read -p "Port : " port
+sudo mkdir -p /home/codeusers/$user/workspace
 cd /home/codeusers
 rm .env
 sudo cat > /home/codeusers/.env << EOF
@@ -196,8 +197,8 @@ NAMA_PELANGGAN=$user
 PASSWORD_PELANGGAN=$pw
 EOF
 sudo docker compose -p $user up -d
-if [ -d "/home/codeusers/$user" ]; then
-cd /home/codeusers/$user
+if [ -d "/home/codeusers/$user/workspace" ]; then
+cd /home/codeusers/$user/workspace
 
 ### Your custom default bundling files goes here, it's recommended to put it on resources directory
 ### START
@@ -218,6 +219,7 @@ read -s -p "Password : " pw
 echo
 read -p "Port : " portenv
 read -p "Memory Limit (Example = 1024m) : " mem
+sudo mkdir -p /home/codeusersmemlimit/$user/workspace
 cd /home/codeusersmemlimit
 rm .env
 sudo cat > /home/codeusersmemlimit/.env << EOF
@@ -229,8 +231,8 @@ EOF
 sed -i '$ d' /home/codeusersmemlimit/docker-compose.yml
 echo "          memory: $mem" >> /home/codeusersmemlimit/docker-compose.yml
 sudo docker compose -p $user up -d
-if [ -d "/home/codeusersmemlimit/$user" ]; then
-cd /home/codeusersmemlimit/$user
+if [ -d "/home/codeusersmemlimit/$user/workspace" ]; then
+cd /home/codeusersmemlimit/$user/workspace
 
 ### Your custom default bundling files goes here, it's recommended to put it on resources directory
 ### START
