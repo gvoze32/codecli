@@ -48,7 +48,6 @@ services:
       - TZ=Asia/Jakarta
       - PASSWORD=\${PASSWORD_PELANGGAN}
       - SUDO_PASSWORD=\${PASSWORD_PELANGGAN}
-      - DEFAULT_WORKSPACE=/home/codeusers/\${NAMA_PELANGGAN}
     volumes:
       - /home/codeusers/\${NAMA_PELANGGAN}
     ports:
@@ -70,7 +69,6 @@ services:
       - TZ=Asia/Jakarta
       - PASSWORD=\${PASSWORD_PELANGGAN}
       - SUDO_PASSWORD=\${PASSWORD_PELANGGAN}
-      - DEFAULT_WORKSPACE=/home/codeusers/\${NAMA_PELANGGAN}
     volumes:
       - /home/codeusersmemlimit/\${NAMA_PELANGGAN}
     ports:
