@@ -48,9 +48,8 @@ services:
       - TZ=Asia/Jakarta
       - PASSWORD=\${PASSWORD_PELANGGAN}
       - SUDO_PASSWORD=\${PASSWORD_PELANGGAN}
-      - DEFAULT_WORKSPACE=/home/codeusers/\${NAMA_PELANGGAN}/workspace
     volumes:
-      - /home/codeusers/\${NAMA_PELANGGAN}/workspace
+      - /home/codeusers/\${NAMA_PELANGGAN}
     ports:
       - \${PORT}:8443
     restart: unless-stopped
@@ -70,9 +69,8 @@ services:
       - TZ=Asia/Jakarta
       - PASSWORD=\${PASSWORD_PELANGGAN}
       - SUDO_PASSWORD=\${PASSWORD_PELANGGAN}
-      - DEFAULT_WORKSPACE=/home/codeusersmemlimit/\${NAMA_PELANGGAN}/workspace
     volumes:
-      - /home/codeusersmemlimit/\${NAMA_PELANGGAN}/workspace
+      - /home/codeusersmemlimit/\${NAMA_PELANGGAN}
     ports:
       - \${PORT}:8443
     restart: unless-stopped
