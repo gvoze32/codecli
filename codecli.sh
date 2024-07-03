@@ -183,7 +183,7 @@ systemctl status code-$user.service
 
 createnewdocker(){
 read -p "Username : " user
-read -p "Password : " pw
+read -s -p "Password : " pw
 read -p "Port : " port
 cd /home/codeusers
 rm .env
@@ -211,7 +211,7 @@ fi
 
 createnewdockermemlimit(){
 read -p "Username : " user
-read -p "Password : " pw
+read -s -p "Password : " pw
 read -p "Port : " portenv
 read -p "Memory Limit (Example = 1024m) : " mem
 cd /home/codeusersmemlimit
