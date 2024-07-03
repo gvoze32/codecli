@@ -618,8 +618,11 @@ about
 case $1 in
 create)
   case $2 in
-    systemctl)
-      createnewsystemctl
+    systemd)
+      createnewsystemd
+    ;;
+    systemdlimit)
+      createnewsystemdlimit
     ;;
     docker)
       createnewdocker
@@ -628,7 +631,7 @@ create)
       createnewdockermemlimit
     ;;
     *)
-      echo "Command not found, type c9cli help for help"
+      echo "Command not found, type codecli help for help"
   esac
   ;;
 manage)
