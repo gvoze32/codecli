@@ -80,15 +80,15 @@ read -p "Port : " port
 apt-get update -y
 apt-get upgrade -y
 
-adduser --disabled-password --gecos "" $user
-echo "$user:$password" | chpasswd
+sudo adduser --disabled-password --gecos "" $user
+sudo echo -e "$password\n$password" | passwd $user
 
 mkdir -p /home/$user/my-projects
-chown -R $user:$user /home/$user
+sudo chown $user.$user /home/$user -R
 
 sudo -u $user -H sh -c "curl -fsSL https://code-server.dev/install.sh | sh"
 
-chmod 700 /home/$user
+sudo chmod 700 /home/$user/ -R
 
 cat > /lib/systemd/system/code-$user.service << EOF
 [Unit]
@@ -107,7 +107,7 @@ Restart=on-failure
 # WorkingDirectory=/home/$user/coder
 # Environment="PATH=/home/$user/coder"
 # Environment="PASSWORD=$password"
-Environment=PASSWORD=your_password
+Environment=PASSWORD=$password
 
 StandardOutput=journal
 StandardError=journal
@@ -139,15 +139,15 @@ read -p "Port : " port
 apt-get update -y
 apt-get upgrade -y
 
-adduser --disabled-password --gecos "" $user
-echo "$user:$password" | chpasswd
+sudo adduser --disabled-password --gecos "" $user
+sudo echo -e "$password\n$password" | passwd $user
 
 mkdir -p /home/$user/my-projects
-chown -R $user:$user /home/$user
+sudo chown $user.$user /home/$user -R
 
 sudo -u $user -H sh -c "curl -fsSL https://code-server.dev/install.sh | sh"
 
-chmod 700 /home/$user
+sudo chmod 700 /home/$user/ -R
 
 cat > /lib/systemd/system/code-$user.service << EOF
 [Unit]
@@ -168,7 +168,7 @@ Restart=on-failure
 # WorkingDirectory=/home/$user/coder
 # Environment="PATH=/home/$user/coder"
 # Environment="PASSWORD=$password"
-Environment=PASSWORD=your_password
+Environment=PASSWORD=$password
 
 StandardOutput=journal
 StandardError=journal
