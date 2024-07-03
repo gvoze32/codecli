@@ -83,7 +83,6 @@ apt-get upgrade -y
 sudo adduser --disabled-password --gecos "" $user
 sudo echo -e "$password\n$password" | passwd $user
 
-mkdir -p /home/$user/my-projects
 sudo chown -R $user:$user /home/$user
 
 sudo -u $user -H sh -c "curl -fsSL https://code-server.dev/install.sh | sh"
@@ -97,16 +96,14 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/code-server --bind-addr 0.0.0.0:$port --user-data-dir /home/$user/my-projects --auth password
+ExecStart=/usr/bin/code-server --bind-addr 0.0.0.0:$port --user-data-dir /var/lib/code-server --auth password
 User=$user
 Group=$user
 
 UMask=0002
 Restart=on-failure
 
-# WorkingDirectory=/home/$user/coder
-# Environment="PATH=/home/$user/coder"
-# Environment="PASSWORD=$password"
+WorkingDirectory=/home/$user/workspace
 Environment=PASSWORD=$password
 
 StandardOutput=journal
@@ -142,7 +139,6 @@ apt-get upgrade -y
 sudo adduser --disabled-password --gecos "" $user
 sudo echo -e "$password\n$password" | passwd $user
 
-mkdir -p /home/$user/my-projects
 sudo chown -R $user:$user /home/$user
 
 sudo -u $user -H sh -c "curl -fsSL https://code-server.dev/install.sh | sh"
@@ -156,7 +152,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/code-server --bind-addr 0.0.0.0:$port --user-data-dir /home/$user/my-projects --auth password
+ExecStart=/usr/bin/code-server --bind-addr 0.0.0.0:$port --user-data-dir /var/lib/code-server --auth password
 User=$user
 Group=$user
 
@@ -165,9 +161,7 @@ MemoryMax=$mem
 
 Restart=on-failure
 
-# WorkingDirectory=/home/$user/coder
-# Environment="PATH=/home/$user/coder"
-# Environment="PASSWORD=$password"
+WorkingDirectory=/home/$user/workspace
 Environment=PASSWORD=$password
 
 StandardOutput=journal
@@ -191,16 +185,16 @@ createnewdocker(){
 read -p "Username : " user
 read -p "Password : " pw
 read -p "Port : " port
-cd /home/c9users
+cd /home/codeusers
 rm .env
-sudo cat > /home/c9users/.env << EOF
+sudo cat > /home/codeusers/.env << EOF
 PORT=$port
 NAMA_PELANGGAN=$user
 PASSWORD_PELANGGAN=$pw
 EOF
 sudo docker-compose -p $user up -d
-if [ -d "/home/c9users/$user" ]; then
-cd /home/c9users/$user
+if [ -d "/home/codeusers/$user" ]; then
+cd /home/codeusers/$user
 
 ### Your custom default bundling files goes here, it's recommended to put it on resources directory
 ### START
@@ -219,24 +213,20 @@ createnewdockermemlimit(){
 read -p "Username : " user
 read -p "Password : " pw
 read -p "Port : " portenv
-read -p "CPU Limit (Example = 1) : " cpu
 read -p "Memory Limit (Example = 1024m) : " mem
-cd /home/c9usersmemlimit
+cd /home/codeusersmemlimit
 rm .env
-sudo cat > /home/c9usersmemlimit/.env << EOF
+sudo cat > /home/codeusersmemlimit/.env << EOF
 PORT=$portenv
 NAMA_PELANGGAN=$user
 PASSWORD_PELANGGAN=$pw
 MEMORY=$mem
-CPUS=1
 EOF
-sed -i '$ d' /home/c9usersmemlimit/docker-compose.yml
-sed -i '$ d' /home/c9usersmemlimit/docker-compose.yml
-echo "    mem_limit: $mem" >> /home/c9usersmemlimit/docker-compose.yml
-echo "    cpus: $cpu" >> /home/c9usersmemlimit/docker-compose.yml
+sed -i '$ d' /home/codeusersmemlimit/docker-compose.yml
+echo "          memory: $mem" >> /home/codeusersmemlimit/docker-compose.yml
 sudo docker-compose -p $user up -d
-if [ -d "/home/c9usersmemlimit/$user" ]; then
-cd /home/c9usersmemlimit/$user
+if [ -d "/home/codeusersmemlimit/$user" ]; then
+cd /home/codeusersmemlimit/$user
 
 ### Your custom default bundling files goes here, it's recommended to put it on resources directory
 ### START
@@ -251,10 +241,10 @@ fi
 
 # MANAGE SYSTEMCTL
 
-deletesystemctl(){
+deletesystemd(){
 read -p "Input User : " user
 sleep 3
-sudo systemctl stop c9-$user.service
+sudo systemctl stop code-$user.service
 sleep 3
 sudo killall -u $user
 sleep 3
@@ -262,32 +252,32 @@ sudo userdel $user
 rm -rf /home/$user
 }
 
-statussystemctl(){
+statussystemd(){
 read -p "Input User : " user
-sudo systemctl status c9-$user.service
+sudo systemctl status code-$user.service
 }
 
-restartsystemctl(){
+restartsystemd(){
 read -p "Input User : " user
 sudo systemctl daemon-reload
-sudo systemctl enable c9-$user.service
-sudo systemctl restart c9-$user.service
+sudo systemctl enable code-$user.service
+sudo systemctl restart code-$user.service
 sleep 10
-sudo systemctl status c9-$user.service
+sudo systemctl status code-$user.service
 }
 
-changepasswordsystemctl() {
+changepasswordsystemd() {
 read -p "Input User :" user
 read -p "Input New Password :" password
 
-sudo sed -i "s/-a $user:.*/-a $user:$password/" /lib/systemd/system/c9-$user.service
+sudo sed -i "s/^Environment=PASSWORD=.*/Environment=PASSWORD=$password/" /lib/systemd/system/code-$user.service
 sudo systemctl daemon-reload
-sudo systemctl restart c9-$user.service
+sudo systemctl restart code-$user.service
 sleep 10
-sudo systemctl status c9-$user.service
+sudo systemctl status code-$user.service
 }
 
-schedulesystemctl(){
+schedulesystemd(){
 read -p "Input User : " user
 echo " "
 echo "Format Example for Time: "
@@ -307,7 +297,7 @@ echo " "
 read -p "Time: " waktu
 at $waktu <<END
 sleep 3
-sudo systemctl stop c9-$user.service
+sudo systemctl stop code-$user.service
 sleep 3
 sudo killall -u $user
 sleep 3
@@ -319,17 +309,17 @@ scheduledatq(){
 sudo atq
 }
 
-convertsystemctl(){
+convertsystemd(){
 read -p "Input User : " user
 echo "Input user password"
 passwd $user
-echo "Warning, C9 will be restart!"
+echo "Warning, code-server will be restart!"
 usermod -aG sudo $user
 sudo systemctl daemon-reload
-sudo systemctl enable c9-$user.service
-sudo systemctl restart c9-$user.service
+sudo systemctl enable code-$user.service
+sudo systemctl restart code-$user.service
 sleep 10
-sudo systemctl status c9-$user.service
+sudo systemctl status code-$user.service
 }
 
 # MANAGE DOCKER
@@ -342,10 +332,10 @@ echo 2. Docker Memory Limit
 read -r -p "Choose: " response
 case "$response" in
     1) 
-cd /home/c9users
+cd /home/codeusers
         ;;
     *)
-cd /home/c9usersmemlimit
+cd /home/codeusersmemlimit
         ;;
 esac
 sudo docker-compose -p $user down
@@ -368,12 +358,11 @@ changepassworddocker() {
   
   case $option in
     1)
-      base_dir="/home/c9users"
+      base_dir="/home/codeusers"
       ;;
     2)
-      base_dir="/home/c9usersmemlimit"
+      base_dir="/home/codeusersmemlimit"
       read -p "Memory Limit (Example = 1024m): " mem
-      read -p "CPU Limit (Example = 1) : " cpu
       ;;
     *)
       echo "Invalid option"
@@ -396,9 +385,9 @@ EOF
     echo "Docker container restarted for user $user"
     
     if [ "$option" = "2" ]; then
-      echo " mem_limit: $mem" >> docker-compose.yml
-      echo " cpus: $cpu" >> docker-compose.yml
-      echo "Memory and CPU limits updated for user $user"
+      sed -i '$ d' /home/codeusersmemlimit/docker-compose.yml
+      echo "          memory: $mem" >> docker-compose.yml
+      echo "Memory limits updated for user $user"
     fi
   else
     echo "User $user does not exist or workspace directory not found"
@@ -428,13 +417,13 @@ read -p "Time: " waktu
 case "$response" in
     [yY][eE][sS]|[yY]) 
 at $waktu <<END
-cd /home/c9users
+cd /home/codeusers
 sudo docker-compose -p $user down
 END
         ;;
     *)
 at $waktu <<END
-cd /home/c9usersmemlimit
+cd /home/codeusersmemlimit
 sudo docker-compose -p $user down
 END
         ;;
@@ -455,10 +444,10 @@ echo 2. Docker Memory Limit
 read -r -p "Choose: " response
 case "$response" in
     1) 
-cd /home/c9users
+cd /home/codeusers
         ;;
     *)
-cd /home/c9usersmemlimit
+cd /home/codeusersmemlimit
         ;;
 esac
 sudo docker container stop $user
@@ -470,10 +459,10 @@ echo 2. Docker Memory Limit
 read -r -p "Choose: " response
 case "$response" in
     1) 
-cd /home/c9users
+cd /home/codeusers
         ;;
     *)
-cd /home/c9usersmemlimit
+cd /home/codeusersmemlimit
         ;;
 esac
 sudo docker container start $user
@@ -485,10 +474,10 @@ echo 2. Docker Memory Limit
 read -r -p "Choose: " response
 case "$response" in
     1) 
-cd /home/c9users
+cd /home/codeusers
         ;;
     *)
-cd /home/c9usersmemlimit
+cd /home/codeusersmemlimit
         ;;
 esac
 sudo docker container stop $user
@@ -522,15 +511,15 @@ sudo cat > /home/backup-$name.sh << EOF
 date=\$(date +%y-%m-%d)
 rclone mkdir $name:Backup/backup-\$date
 cd /home
-for i in */; do if ! [[ \$i =~ ^(c9users/|c9usersmemlimit/)$ ]]; then zip -r "\${i%/}.zip" "\$i"; fi done
-cd /home/c9users
+for i in */; do if ! [[ \$i =~ ^(codeusers/|codeusersmemlimit/)$ ]]; then zip -r "\${i%/}.zip" "\$i"; fi done
+cd /home/codeusers
 for i in */; do zip -r "\${i%/}.zip" "\$i"; done
-cd /home/c9usersmemlimit
+cd /home/codeusersmemlimit
 for i in */; do zip -r "\${i%/}.zip" "\$i"; done
 mkdir /home/backup
 mv /home/*.zip /home/backup
-mv /home/c9users/*.zip /home/backup
-mv /home/c9usersmemlimit/*.zip /home/backup
+mv /home/codeusers/*.zip /home/backup
+mv /home/codeusersmemlimit/*.zip /home/backup
 rclone copy /home/backup $name:Backup/backup-\$date
 rm -rf /home/backup
 lines=\$(rclone lsf $name: 2>&1 | wc -l)
@@ -561,15 +550,15 @@ sudo cat > /home/backup-$name.sh << EOF
 date=\$(date +%y-%m-%d)
 rclone mkdir $name:backup-\$date
 cd /home
-for i in */; do if ! [[ \$i =~ ^(c9users/|c9usersmemlimit/)$ ]]; then zip -r "\${i%/}.zip" "\$i"; fi done
-cd /home/c9users
+for i in */; do if ! [[ \$i =~ ^(codeusers/|codeusersmemlimit/)$ ]]; then zip -r "\${i%/}.zip" "\$i"; fi done
+cd /home/codeusers
 for i in */; do zip -r "\${i%/}.zip" "\$i"; done
-cd /home/c9usersmemlimit
+cd /home/codeusersmemlimit
 for i in */; do zip -r "\${i%/}.zip" "\$i"; done
 mkdir /home/backup
 mv /home/*.zip /home/backup/
-mv /home/c9users/*.zip /home/backup/
-mv /home/c9usersmemlimit/*.zip /home/backup/
+mv /home/codeusers/*.zip /home/backup/
+mv /home/codeusersmemlimit/*.zip /home/backup/
 rclone copy /home/backup/ $name:backup-\$date/
 rm -rf /home/backup
 lines=\$(rclone lsf $name: 2>&1 | wc -l)
@@ -637,28 +626,28 @@ create)
   ;;
 manage)
   case $2 in
-    systemctl)
+    systemd)
     case $3 in
       delete)
-        deletesystemctl
+        deletesystemd
       ;;
       status)
-        statussystemctl
+        statussystemd
       ;;
       restart)
-        statussystemctl
+        statussystemd
       ;;
       password)
-        changepasswordsystemctl
+        changepasswordsystemd
       ;;
       schedule)
-        schedulesystemctl
+        schedulesystemd
       ;;
       scheduled)
         scheduledatq
       ;;
       convert)
-        convertsystemctl
+        convertsystemd
       ;;
       *)
       echo "Command not found, type c9cli help for help"
