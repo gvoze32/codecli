@@ -260,11 +260,11 @@ case $ubuntu_version in
         # Install rclone
         curl https://rclone.org/install.sh | sudo bash
 
+        install_docker_app
         install_docker
         install_docker_memlimit
         blank_env
         custom_docker_size
-        install_docker_app
         
         # Install ioncube
         install_ioncube
