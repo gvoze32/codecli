@@ -193,7 +193,7 @@ PORT=$port
 NAMA_PELANGGAN=$user
 PASSWORD_PELANGGAN=$pw
 EOF
-sudo docker-compose -p $user up -d
+sudo docker compose -p $user up -d
 if [ -d "/home/codeusers/$user" ]; then
 cd /home/codeusers/$user
 
@@ -226,7 +226,7 @@ MEMORY=$mem
 EOF
 sed -i '$ d' /home/codeusersmemlimit/docker-compose.yml
 echo "          memory: $mem" >> /home/codeusersmemlimit/docker-compose.yml
-sudo docker-compose -p $user up -d
+sudo docker compose -p $user up -d
 if [ -d "/home/codeusersmemlimit/$user" ]; then
 cd /home/codeusersmemlimit/$user
 
@@ -340,7 +340,7 @@ cd /home/codeusers
 cd /home/codeusersmemlimit
         ;;
 esac
-sudo docker-compose -p $user down
+sudo docker compose -p $user down
 rm -rf $user
 }
 
@@ -382,8 +382,8 @@ PASSWORD_PELANGGAN=$newpw
 EOF
     echo "Password changed successfully for user $user"
     
-    sudo docker-compose -p $user down
-    sudo docker-compose -p $user up -d
+    sudo docker compose -p $user down
+    sudo docker compose -p $user up -d
     echo "Docker container restarted for user $user"
     
     if [ "$option" = "2" ]; then
@@ -420,13 +420,13 @@ case "$response" in
     [yY][eE][sS]|[yY]) 
 at $waktu <<END
 cd /home/codeusers
-sudo docker-compose -p $user down
+sudo docker compose -p $user down
 END
         ;;
     *)
 at $waktu <<END
 cd /home/codeusersmemlimit
-sudo docker-compose -p $user down
+sudo docker compose -p $user down
 END
         ;;
 esac
