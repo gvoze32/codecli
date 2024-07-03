@@ -230,7 +230,7 @@ sed -i '$ d' /home/codeusersmemlimit/docker-compose.yml
 echo "          memory: $mem" >> /home/codeusersmemlimit/docker-compose.yml
 sudo docker compose -p $user up -d
 if [ -d "/home/codeusersmemlimit/$user/config/workspace" ]; then
-cd /home/codeusersmemlimit/$user//config/workspace
+cd /home/codeusersmemlimit/$user/config/workspace
 
 ### Your custom default bundling files goes here, it's recommended to put it on resources directory
 ### START
