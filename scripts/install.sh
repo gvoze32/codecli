@@ -41,7 +41,7 @@ install_docker() {
 services:
   code-server:
     image: lscr.io/linuxserver/code-server:latest
-    container_name: code-server-\${NAMA_PELANGGAN}
+    container_name: code-\${NAMA_PELANGGAN}
     environment:
       - PUID=1000
       - PGID=1000
@@ -52,7 +52,7 @@ services:
     volumes:
       - /home/codeusers/\${NAMA_PELANGGAN}:/workspace
     ports:
-      - 0.0.0.0:\${PORT}:\${PORT}
+      - "0.0.0.0:\${PORT}:\${PORT}"
     restart: unless-stopped
 EOF
 }
@@ -63,7 +63,7 @@ install_docker_memlimit() {
 services:
   code-server:
     image: lscr.io/linuxserver/code-server:latest
-    container_name: code-server-\${NAMA_PELANGGAN}
+    container_name: code-\${NAMA_PELANGGAN}
     environment:
       - PUID=1000
       - PGID=1000
@@ -74,7 +74,7 @@ services:
     volumes:
       - /home/codeusersmemlimit/\${NAMA_PELANGGAN}:/workspace
     ports:
-      - 0.0.0.0:\${PORT}:\${PORT}
+      - "0.0.0.0:\${PORT}:\${PORT}"
     restart: unless-stopped
     deploy:
       resources:
@@ -155,12 +155,13 @@ case $ubuntu_version in
         install_fnm
 
         # Install dependencies
-        sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common at git npm build-essential php php8.1-common php-gd php-mbstring php-curl php8.1-mysql php-json php8.1-xml php-fpm python3 python3-pip zip unzip dos2unix docker-compose
+        sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common at git npm build-essential php php8.1-common php-gd php-mbstring php-curl php8.1-mysql php-json php8.1-xml php-fpm python3 python3-pip zip unzip dos2unix
         systemctl start atd
 
         # Install rclone
         curl https://rclone.org/install.sh | sudo bash
 
+        install_docker_app
         install_docker
         install_docker_memlimit
         blank_env
@@ -189,12 +190,13 @@ case $ubuntu_version in
         install_fnm
 
         # Install dependencies
-        sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common at git npm build-essential php7.4-cli php-gd php-mbstring php-curl php-mysqli php-json php-dom php-fpm python3 python3-pip zip unzip dos2unix docker-compose
+        sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common at git npm build-essential php7.4-cli php-gd php-mbstring php-curl php-mysqli php-json php-dom php-fpm python3 python3-pip zip unzip dos2unix
         systemctl start atd
 
         # Install rclone
         curl https://rclone.org/install.sh | sudo bash
 
+        install_docker_app
         install_docker
         install_docker_memlimit
         blank_env
@@ -218,12 +220,13 @@ case $ubuntu_version in
         install_fnm
 
         # Install dependencies
-        sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common curl at git npm build-essential php php7.2-common php-gd php-mbstring php-curl php7.2-mysql php-json php7.2-xml php-fpm python python3-pip zip unzip dos2unix docker-compose
+        sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common curl at git npm build-essential php php7.2-common php-gd php-mbstring php-curl php7.2-mysql php-json php7.2-xml php-fpm python python3-pip zip unzip dos2unix
         systemctl start atd
 
         # Install rclone
         curl https://rclone.org/install.sh | sudo bash
 
+        install_docker_app
         install_docker
         install_docker_memlimit
         blank_env
