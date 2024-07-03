@@ -116,6 +116,7 @@ SyslogIdentifier=code-$user
 
 [Install]
 WantedBy=multi-user.target
+EOF
 
 systemctl daemon-reload
 systemctl enable code-$user.service
@@ -176,6 +177,7 @@ SyslogIdentifier=code-$user
 
 [Install]
 WantedBy=multi-user.target
+EOF
 
 systemctl daemon-reload
 systemctl enable code-$user.service
