@@ -304,7 +304,7 @@ sleep 10
 systemctl status code-$user.service
 }
 
-createnewsystemdlimit(){
+createnewsystemdlimitbeta(){
 if [ "$(id -u)" != "0" ]; then
     echo "This script must be run as root" 1>&2
     return 1
