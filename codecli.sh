@@ -2,7 +2,7 @@
 
 rootcheck() {
     if [ "$(id -u)" != "0" ]; then
-        echo "This script must be run as root" 1>&2
+        echo "codecli must be run as root!" 1>&2
         exit 1
     fi
 }
@@ -36,7 +36,7 @@ about() {
 
 bantuan() {
     echo "How to use:"
-    echo "Please use sudo!"
+    echo "codecli must be run as root!"
     echo "codecli [command] [argument] [argument]"
     echo
     echo "Command Lists:"
@@ -78,11 +78,6 @@ bantuan() {
 # CREATE SYSTEMD
 
 createnewsystemd(){
-if [ "$(id -u)" != "0" ]; then
-    echo "This script must be run as root" 1>&2
-    return 1
-fi
-
 read -p "Username : " user
 read -s -p "Password : " password
 echo
@@ -133,11 +128,6 @@ systemctl status code-$user.service
 }
 
 createnewsystemdlimit(){
-if [ "$(id -u)" != "0" ]; then
-    echo "This script must be run as root" 1>&2
-    return 1
-fi
-
 read -p "Username : " user
 read -s -p "Password : " password
 echo
@@ -253,11 +243,6 @@ fi
 }
 
 createnewsystemdbeta(){
-if [ "$(id -u)" != "0" ]; then
-    echo "This script must be run as root" 1>&2
-    return 1
-fi
-
 read -p "Username : " user
 read -s -p "Password : " password
 echo
@@ -314,11 +299,6 @@ systemctl status code-$user.service
 }
 
 createnewsystemdlimitbeta(){
-if [ "$(id -u)" != "0" ]; then
-    echo "This script must be run as root" 1>&2
-    return 1
-fi
-
 read -p "Username : " user
 read -s -p "Password : " password
 echo
