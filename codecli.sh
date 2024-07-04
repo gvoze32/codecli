@@ -41,8 +41,6 @@ bantuan() {
     echo "  systemdlimit      : Create a new SystemD workspace with limited RAM"
     echo "  docker            : Create a new Docker container"
     echo "  dockerlimit       : Create a new Docker container with limited RAM"
-    echo "  systemdbeta       : Create a new SystemD workspace (Beta version - for testing only!)"
-    echo "  systemdlimitbeta  : Create a new SystemD workspace with limited RAM (Beta version - for testing only!)"
     echo "manage"
     echo "  systemd"
     echo "    delete          : Delete workspace"
@@ -236,105 +234,6 @@ cd
 else
 echo -e "\033[33mWARN! Workspace directory not found - Ignore this message if you are not adding default bundling files\033[0m"
 fi
-}
-
-createnewsystemdbeta(){
-read -p "Username : " user
-read -s -p "Password : " password
-echo
-read -p "Port : " port
-
-apt-get update -y
-apt-get upgrade -y
-
-sudo adduser --disabled-password --gecos "" $user
-sudo echo -e "$password\n$password" | passwd $user
-
-sudo chown -R $user:$user /home/$user
-
-sudo chmod 700 /home/$user/ -R
-
-cat > /lib/systemd/system/code-$user.service << EOF
-[Unit]
-Description=code-server for $user
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/code-server --bind-addr 0.0.0.0:$port --user-data-dir /var/lib/code-server --auth password
-User=$user
-Group=$user
-
-UMask=0002
-Restart=on-failure
-
-WorkingDirectory=/home/$user/workspace
-Environment=PASSWORD=$password
-
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=code-$user
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable code-$user.service
-systemctl restart code-$user.service
-sleep 10
-systemctl status code-$user.service
-}
-
-createnewsystemdlimitbeta(){
-read -p "Username : " user
-read -s -p "Password : " password
-echo
-read -p "Memory Limit (Example = 1G) : " mem
-read -p "Port : " port
-
-apt-get update -y
-apt-get upgrade -y
-
-sudo adduser --disabled-password --gecos "" $user
-sudo echo -e "$password\n$password" | passwd $user
-
-sudo chown -R $user:$user /home/$user
-
-sudo chmod 700 /home/$user/ -R
-
-cat > /lib/systemd/system/code-$user.service << EOF
-[Unit]
-Description=code-server for $user
-After=network.target
-
-[Service]
-Type=simple
-ExecStart=/usr/bin/code-server --bind-addr 0.0.0.0:$port --user-data-dir /var/lib/code-server --auth password
-User=$user
-Group=$user
-
-UMask=0002
-MemoryMax=$mem
-
-Restart=on-failure
-
-WorkingDirectory=/home/$user/workspace
-Environment=PASSWORD=$password
-
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=code-$user
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable code-$user.service
-systemctl restart code-$user.service
-sleep 10
-systemctl status code-$user.service
 }
 
 # MANAGE SYSTEMD
@@ -717,12 +616,6 @@ create)
     ;;
     dockerlimit)
       createnewdockermemlimit
-    ;;
-    systemdbeta)
-      createnewsystemdbeta
-    ;;
-    systemdlimitbeta)
-      createnewsystemdlimitbeta
     ;;
     *)
       echo "Command not found, type codecli help for help"
