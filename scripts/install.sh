@@ -253,7 +253,7 @@ case $ubuntu_version in
         install_fnm
 
         # Install dependencies
-        sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common ca-certificates curl at git npm build-essential php8.3 libapache2-mod-php php8.3-common php8.3-cli php8.3-mbstring php8.3-bcmath php8.3-fpm php8.3-mysql php8.3-zip php8.3-gd php8.3-curl php8.3-xml python3 python3-pip zip unzip dos2unix docker-compose
+        sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common ca-certificates curl at git npm build-essential php8.3 libapache2-mod-php php8.3-common php8.3-cli php8.3-mbstring php8.3-bcmath php8.3-fpm php8.3-mysql php8.3-zip php8.3-gd php8.3-curl php8.3-xml python3 python3-pip zip unzip dos2unix
         systemctl start atd
 
         # Install rclone
