@@ -189,6 +189,8 @@ read -s -p "Password : " pw
 echo
 read -p "Port : " port
 
+sudo mkdir -p /home/codeusers/$user/config/workspace
+
 sudo chown -R $user:$user /home/codeusers/$user
 sudo chmod 700 /home/codeusers/$user -R
 
@@ -222,6 +224,8 @@ read -s -p "Password : " pw
 echo
 read -p "Port : " portenv
 read -p "Memory Limit (Example = 1024m) : " mem
+
+sudo mkdir -p /home/codeusersmemlimit/$user/config/workspace
 
 sudo chown -R $user:$user /home/codeusersmemlimit/$user
 sudo chmod 700 /home/codeusersmemlimit/$user -R
