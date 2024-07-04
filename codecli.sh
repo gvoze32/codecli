@@ -1,13 +1,9 @@
 #!/bin/bash
 
-rootcheck() {
-    if [ "$(id -u)" != "0" ]; then
-        echo "codecli must be run as root!" 1>&2
-        exit 1
-    fi
-}
-
-rootcheck
+if [ "$(id -u)" != "0" ]; then
+    echo "codecli must be run as root!" 1>&2
+    exit 1
+fi
 
 # COMMANDS
 
