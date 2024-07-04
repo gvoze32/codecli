@@ -252,9 +252,48 @@ sudo echo -e "$password\n$password" | passwd $user
 
 sudo chown -R $user:$user /home/$user
 
-sudo -u $user -H sh -c "mkdir /home/$user/code-server && cd /home/$user/code-server && wget https://github.com/coder/code-server/releases/download/v4.90.3/code-server-4.90.3-linux-amd64.tar.gz"
-sudo -u $user -H sh -c "cd /home/$user/code-server && tar -xzvf code-server-4.90.3-linux-amd64.tar.gz && sudo cp -r code-server-4.90.3-linux-amd64 /usr/lib/code-server"
-sudo -u $user -H sh -c "sudo ln -s /usr/lib/code-server/bin/code-server /usr/bin/code-server && sudo mkdir /var/lib/code-server"
+CODE_SERVER_VERSION="4.90.3"
+DOWNLOAD_URL="https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server-${CODE_SERVER_VERSION}-linux-amd64.tar.gz"
+TARBALL_NAME="code-server-${CODE_SERVER_VERSION}-linux-amd64.tar.gz"
+INSTALL_DIR="/home/${USER}/code-server"
+
+sudo -u $USER mkdir -p $INSTALL_DIR
+if [ $? -ne 0 ]; then
+    echo "Failed to create directory $INSTALL_DIR"
+    exit 1
+fi
+
+sudo -u $USER wget -P $INSTALL_DIR $DOWNLOAD_URL
+if [ $? -ne 0 ]; then
+    echo "Failed to download code-server"
+    exit 1
+fi
+
+sudo -u $USER tar -xzvf $INSTALL_DIR/$TARBALL_NAME -C $INSTALL_DIR
+if [ $? -ne 0 ]; then
+    echo "Failed to extract $TARBALL_NAME"
+    exit 1
+fi
+
+sudo cp -r $INSTALL_DIR/code-server-$CODE_SERVER_VERSION-linux-amd64 /usr/lib/code-server
+if [ $? -ne 0 ]; then
+    echo "Failed to copy to /usr/lib/code-server"
+    exit 1
+fi
+
+sudo ln -s /usr/lib/code-server/bin/code-server /usr/bin/code-server
+if [ $? -ne 0 ]; then
+    echo "Failed to create symlink"
+    exit 1
+fi
+
+sudo mkdir -p /var/lib/code-server
+if [ $? -ne 0 ]; then
+    echo "Failed to create /var/lib/code-server"
+    exit 1
+fi
+
+echo "Installation completed successfully"
 
 sudo chmod 700 /home/$user/ -R
 
@@ -305,9 +344,48 @@ sudo echo -e "$password\n$password" | passwd $user
 
 sudo chown -R $user:$user /home/$user
 
-sudo -u $user -H sh -c "mkdir /home/$user/code-server && cd /home/$user/code-server && wget https://github.com/coder/code-server/releases/download/v4.90.3/code-server-4.90.3-linux-amd64.tar.gz"
-sudo -u $user -H sh -c "cd /home/$user/code-server && tar -xzvf code-server-4.90.3-linux-amd64.tar.gz && sudo cp -r code-server-4.90.3-linux-amd64 /usr/lib/code-server"
-sudo -u $user -H sh -c "sudo ln -s /usr/lib/code-server/bin/code-server /usr/bin/code-server && sudo mkdir /var/lib/code-server"
+CODE_SERVER_VERSION="4.90.3"
+DOWNLOAD_URL="https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server-${CODE_SERVER_VERSION}-linux-amd64.tar.gz"
+TARBALL_NAME="code-server-${CODE_SERVER_VERSION}-linux-amd64.tar.gz"
+INSTALL_DIR="/home/${USER}/code-server"
+
+sudo -u $USER mkdir -p $INSTALL_DIR
+if [ $? -ne 0 ]; then
+    echo "Failed to create directory $INSTALL_DIR"
+    exit 1
+fi
+
+sudo -u $USER wget -P $INSTALL_DIR $DOWNLOAD_URL
+if [ $? -ne 0 ]; then
+    echo "Failed to download code-server"
+    exit 1
+fi
+
+sudo -u $USER tar -xzvf $INSTALL_DIR/$TARBALL_NAME -C $INSTALL_DIR
+if [ $? -ne 0 ]; then
+    echo "Failed to extract $TARBALL_NAME"
+    exit 1
+fi
+
+sudo cp -r $INSTALL_DIR/code-server-$CODE_SERVER_VERSION-linux-amd64 /usr/lib/code-server
+if [ $? -ne 0 ]; then
+    echo "Failed to copy to /usr/lib/code-server"
+    exit 1
+fi
+
+sudo ln -s /usr/lib/code-server/bin/code-server /usr/bin/code-server
+if [ $? -ne 0 ]; then
+    echo "Failed to create symlink"
+    exit 1
+fi
+
+sudo mkdir -p /var/lib/code-server
+if [ $? -ne 0 ]; then
+    echo "Failed to create /var/lib/code-server"
+    exit 1
+fi
+
+echo "Installation completed successfully"
 
 sudo chmod 700 /home/$user/ -R
 
