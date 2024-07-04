@@ -252,6 +252,7 @@ sudo echo -e "$password\n$password" | passwd $user
 
 sudo chown -R $user:$user /home/$user
 
+USER=$user
 CODE_SERVER_VERSION="4.90.3"
 DOWNLOAD_URL="https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server-${CODE_SERVER_VERSION}-linux-amd64.tar.gz"
 TARBALL_NAME="code-server-${CODE_SERVER_VERSION}-linux-amd64.tar.gz"
@@ -269,9 +270,21 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-sudo -u $USER tar -xzvf $INSTALL_DIR/$TARBALL_NAME -C $INSTALL_DIR
+if [ ! -f "$INSTALL_DIR/$TARBALL_NAME" ]; then
+    echo "Downloaded file not found: $INSTALL_DIR/$TARBALL_NAME"
+    exit 1
+fi
+
+if [ ! -r "$INSTALL_DIR/$TARBALL_NAME" ]; then
+    echo "Downloaded file is not readable: $INSTALL_DIR/$TARBALL_NAME"
+    sudo chmod +r "$INSTALL_DIR/$TARBALL_NAME"
+fi
+
+sudo -u $USER tar -xzvf "$INSTALL_DIR/$TARBALL_NAME" -C "$INSTALL_DIR"
 if [ $? -ne 0 ]; then
     echo "Failed to extract $TARBALL_NAME"
+    echo "Contents of $INSTALL_DIR:"
+    ls -l "$INSTALL_DIR"
     exit 1
 fi
 
@@ -344,6 +357,7 @@ sudo echo -e "$password\n$password" | passwd $user
 
 sudo chown -R $user:$user /home/$user
 
+USER=$user
 CODE_SERVER_VERSION="4.90.3"
 DOWNLOAD_URL="https://github.com/coder/code-server/releases/download/v${CODE_SERVER_VERSION}/code-server-${CODE_SERVER_VERSION}-linux-amd64.tar.gz"
 TARBALL_NAME="code-server-${CODE_SERVER_VERSION}-linux-amd64.tar.gz"
@@ -361,9 +375,21 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-sudo -u $USER tar -xzvf $INSTALL_DIR/$TARBALL_NAME -C $INSTALL_DIR
+if [ ! -f "$INSTALL_DIR/$TARBALL_NAME" ]; then
+    echo "Downloaded file not found: $INSTALL_DIR/$TARBALL_NAME"
+    exit 1
+fi
+
+if [ ! -r "$INSTALL_DIR/$TARBALL_NAME" ]; then
+    echo "Downloaded file is not readable: $INSTALL_DIR/$TARBALL_NAME"
+    sudo chmod +r "$INSTALL_DIR/$TARBALL_NAME"
+fi
+
+sudo -u $USER tar -xzvf "$INSTALL_DIR/$TARBALL_NAME" -C "$INSTALL_DIR"
 if [ $? -ne 0 ]; then
     echo "Failed to extract $TARBALL_NAME"
+    echo "Contents of $INSTALL_DIR:"
+    ls -l "$INSTALL_DIR"
     exit 1
 fi
 
