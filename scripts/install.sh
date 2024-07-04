@@ -43,14 +43,12 @@ services:
     image: lscr.io/linuxserver/code-server:latest
     container_name: code-\${NAMA_PELANGGAN}
     environment:
-      - PUID=1000
-      - PGID=1000
       - TZ=Asia/Jakarta
       - PASSWORD=\${PASSWORD_PELANGGAN}
       - SUDO_PASSWORD=\${PASSWORD_PELANGGAN}
       - DEFAULT_WORKSPACE=/config/workspace
     volumes:
-      - /home/codeusers/\${NAMA_PELANGGAN}:/config
+      - /home/codeusers/\${NAMA_PELANGGAN}:/config/workspace
     ports:
       - \${PORT}:8443
     restart: always
@@ -65,14 +63,12 @@ services:
     image: lscr.io/linuxserver/code-server:latest
     container_name: code-\${NAMA_PELANGGAN}
     environment:
-      - PUID=1000
-      - PGID=1000
       - TZ=Asia/Jakarta
       - PASSWORD=\${PASSWORD_PELANGGAN}
       - SUDO_PASSWORD=\${PASSWORD_PELANGGAN}
       - DEFAULT_WORKSPACE=/config/workspace
     volumes:
-      - /home/codeusersmemlimit/\${NAMA_PELANGGAN}:/config
+      - /home/codeusersmemlimit/\${NAMA_PELANGGAN}:/config/workspace
     ports:
       - \${PORT}:8443
     restart: always
