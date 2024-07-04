@@ -53,7 +53,7 @@ services:
       - /home/codeusers/\${NAMA_PELANGGAN}:/config
     ports:
       - \${PORT}:8443
-    restart: unless-stopped
+    restart: always
 EOF
 }
 
@@ -75,7 +75,7 @@ services:
       - /home/codeusersmemlimit/\${NAMA_PELANGGAN}:/config
     ports:
       - \${PORT}:8443
-    restart: unless-stopped
+    restart: always
     deploy:
       resources:
         limits:

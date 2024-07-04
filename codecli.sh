@@ -30,7 +30,7 @@ bantuan() {
     echo "Please use sudo!"
     echo "codecli [command] [argument] [argument]"
     echo
-    echo "Commands List:"
+    echo "Command Lists:"
     echo "create"
     echo "  systemd           : Create a new SystemD workspace"
     echo "  systemdlimit      : Create a new SystemD workspace with limited RAM"
@@ -188,6 +188,10 @@ read -p "Username : " user
 read -s -p "Password : " pw
 echo
 read -p "Port : " port
+
+sudo chown -R $user:$user /home/codeusers/$user
+sudo chmod 700 /home/codeusers/$user -R
+
 cd /home/codeusers
 rm .env
 sudo cat > /home/codeusers/.env << EOF
@@ -218,6 +222,10 @@ read -s -p "Password : " pw
 echo
 read -p "Port : " portenv
 read -p "Memory Limit (Example = 1024m) : " mem
+
+sudo chown -R $user:$user /home/codeusersmemlimit/$user
+sudo chmod 700 /home/codeusersmemlimit/$user -R
+
 cd /home/codeusersmemlimit
 rm .env
 sudo cat > /home/codeusersmemlimit/.env << EOF
