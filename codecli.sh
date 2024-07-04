@@ -253,7 +253,7 @@ sudo echo -e "$password\n$password" | passwd $user
 sudo chown -R $user:$user /home/$user
 
 sudo -u $user -H sh -c "mkdir /home/$user/code-server && cd /home/$user/code-server && wget https://github.com/coder/code-server/releases/download/v4.90.3/code-server-4.90.3-linux-amd64.tar.gz"
-sudo -u $user -H sh -c "tar -xzvf code-server-4.90.3-linux-amd64.tar.gz && sudo cp -r code-server-4.90.3-linux-amd64 /usr/lib/code-server"
+sudo -u $user -H sh -c "cd /home/$user/code-server && tar -xzvf code-server-4.90.3-linux-amd64.tar.gz && sudo cp -r code-server-4.90.3-linux-amd64 /usr/lib/code-server"
 sudo -u $user -H sh -c "sudo ln -s /usr/lib/code-server/bin/code-server /usr/bin/code-server && sudo mkdir /var/lib/code-server"
 
 sudo chmod 700 /home/$user/ -R
@@ -306,7 +306,7 @@ sudo echo -e "$password\n$password" | passwd $user
 sudo chown -R $user:$user /home/$user
 
 sudo -u $user -H sh -c "mkdir /home/$user/code-server && cd /home/$user/code-server && wget https://github.com/coder/code-server/releases/download/v4.90.3/code-server-4.90.3-linux-amd64.tar.gz"
-sudo -u $user -H sh -c "tar -xzvf code-server-4.90.3-linux-amd64.tar.gz && sudo cp -r code-server-4.90.3-linux-amd64 /usr/lib/code-server"
+sudo -u $user -H sh -c "cd /home/$user/code-server && tar -xzvf code-server-4.90.3-linux-amd64.tar.gz && sudo cp -r code-server-4.90.3-linux-amd64 /usr/lib/code-server"
 sudo -u $user -H sh -c "sudo ln -s /usr/lib/code-server/bin/code-server /usr/bin/code-server && sudo mkdir /var/lib/code-server"
 
 sudo chmod 700 /home/$user/ -R
