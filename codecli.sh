@@ -32,14 +32,14 @@ bantuan() {
     echo
     echo "Commands List:"
     echo "create"
-    echo "  systemd           : Create a new systemctl workspace"
-    echo "  systemdlimit      : Create a new systemctl workspace with limited RAM"
+    echo "  systemd           : Create a new SystemD workspace"
+    echo "  systemdlimit      : Create a new SystemD workspace with limited RAM"
     echo "  docker            : Create a new docker container"
     echo "  dockerlimit       : Create a new docker container with limited RAM and CPU"
-    echo "  systemdbeta       : Create a new systemctl workspace with code-server (Beta version - for testing only!)"
-    echo "  systemdlimitbeta  : Create a new systemctl workspace with limited RAM and code-server (Beta version - for testing only!)"
+    echo "  systemdbeta       : Create a new SystemD workspace with code-server (Beta version - for testing only!)"
+    echo "  systemdlimitbeta  : Create a new SystemD workspace with limited RAM and code-server (Beta version - for testing only!)"
     echo "manage"
-    echo "  systemctl"
+    echo "  systemd"
     echo "    delete          : Delete workspace"
     echo "    status          : Show workspace status"
     echo "    restart         : Restart workspace"
@@ -368,7 +368,7 @@ sleep 10
 systemctl status code-$user.service
 }
 
-# MANAGE SYSTEMCTL
+# MANAGE SYSTEMD
 
 deletesystemd(){
 read -p "Input User : " user
