@@ -17,7 +17,7 @@ echo "
 
 sudo curl -fsSL https://hostingjaya.ninja/api/mirror/code-server/install?raw=true | sudo bash
 
-sudo curl -fsSL https://hostingjaya.ninja/api/mirror/code-server/c9cli?raw=true -o /usr/local/bin/c9cli && sudo chmod +x /usr/local/bin/c9cli
+sudo curl -fsSL https://hostingjaya.ninja/api/mirror/code-server/codecli?raw=true -o /usr/local/bin/codecli && sudo chmod +x /usr/local/bin/codecli
 
 if [ $? -eq 0 ]; then
     echo "code-server installation successful!"
