@@ -137,7 +137,7 @@ bantuan() {
   echo "-o                  : Port number"
   echo "-l                  : Memory limit (e.g., 1024m)"
   echo "-c                  : CPU limit (e.g., 10% or 1.0)"
-  echo "-i                  : Image (e.g., gvoze32/code-server:noble)"
+  echo "-i                  : Image (e.g., gvoze32/code-server:latest)"
   echo "-t                  : Type (e.g., 1 for Docker, 2 for Docker Memory Limit)"
   echo "-n                  : Rclone remote name"
   echo "-h                  : Backup hour"
@@ -320,7 +320,7 @@ createnewdocker() {
   fi
   if [[ -z "$image" ]]; then
     echo "Using Ubuntu 24.04 image"
-    image="gvoze32/code-server:noble"
+    image="gvoze32/code-server:latest"
   else
     echo "Using provided image: $image"
   fi
@@ -387,7 +387,7 @@ createnewdockermemlimit() {
   fi
   if [[ -z "$image" ]]; then
     echo "Using Ubuntu 24.04 image"
-    image="gvoze32/code-server:noble"
+    image="gvoze32/code-server:latest"
   else
     echo "Using provided image: $image"
   fi
@@ -790,7 +790,7 @@ EOF
     cat >>.env <<EOF
 MEMORY=$mem
 CPU_LIMIT=$cpu_limit
-DOCKER_IMAGE=gvoze32/code-server:noble
+DOCKER_IMAGE=gvoze32/code-server:latest
 EOF
   fi
 
