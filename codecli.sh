@@ -11,7 +11,7 @@ ubuntu_version=$(lsb_release -r | awk '{print $2}')
 check_update() {
   echo "Checking for available updates..."
 
-  REPO_URL="https://hostingjaya.ninja/api/mirror/codecli?raw=true"
+  REPO_URL="https://hostingjaya.ninja/api/mirror/code-server/codecli?raw=true"
   max_attempts=3
   attempt=1
 
@@ -81,7 +81,7 @@ about() {
   echo "Name of File  : codecli.sh"
   echo "Version       : $VERSION"
   echo "Tested on     :"
-  echo "    - Debian  : Ubuntu 20.04, 22.04, 24.04"
+  echo "    - Debian  : Ubuntu 24.04"
   echo
   echo "Built with love♡ by gvoze32"
 }
@@ -137,7 +137,7 @@ bantuan() {
   echo "-o                  : Port number"
   echo "-l                  : Memory limit (e.g., 1024m)"
   echo "-c                  : CPU limit (e.g., 10% or 1.0)"
-  echo "-i                  : Image (e.g., gvoze32/code-server:jammy)"
+  echo "-i                  : Image (e.g., gvoze32/code-server:noble)"
   echo "-t                  : Type (e.g., 1 for Docker, 2 for Docker Memory Limit)"
   echo "-n                  : Rclone remote name"
   echo "-h                  : Backup hour"
@@ -319,21 +319,8 @@ createnewdocker() {
     read -p "Port: " port
   fi
   if [[ -z "$image" ]]; then
-    echo "Select image:"
-    echo "1. Ubuntu 20.04"
-    echo "2. Ubuntu 22.04"
-    echo "3. Ubuntu 24.04"
-    read -p "Enter image option (1-3): " image_choice
-    if [ "$image_choice" == "1" ]; then
-      image="gvoze32/code-server:focal"
-    elif [ "$image_choice" == "2" ]; then
-      image="gvoze32/code-server:jammy"
-    elif [ "$image_choice" == "3" ]; then
-      image="gvoze32/code-server:noble"
-    else
-      echo "Invalid option, using default image."
-      image="gvoze32/code-server:jammy"
-    fi
+    echo "Using Ubuntu 24.04 image"
+    image="gvoze32/code-server:noble"
   else
     echo "Using provided image: $image"
   fi
@@ -399,21 +386,8 @@ createnewdockermemlimit() {
     read -p "CPU Limit (e.g., 1.0 for 1 core): " cpu_limit
   fi
   if [[ -z "$image" ]]; then
-    echo "Select image:"
-    echo "1. Ubuntu 20.04"
-    echo "2. Ubuntu 22.04"
-    echo "3. Ubuntu 24.04"
-    read -p "Enter image option (1-3): " image_choice
-    if [ "$image_choice" == "1" ]; then
-      image="gvoze32/code-server:focal"
-    elif [ "$image_choice" == "2" ]; then
-      image="gvoze32/code-server:jammy"
-    elif [ "$image_choice" == "3" ]; then
-      image="gvoze32/code-server:noble"
-    else
-      echo "Invalid option, using default image."
-      image="gvoze32/code-server:jammy"
-    fi
+    echo "Using Ubuntu 24.04 image"
+    image="gvoze32/code-server:noble"
   else
     echo "Using provided image: $image"
   fi
@@ -816,7 +790,7 @@ EOF
     cat >>.env <<EOF
 MEMORY=$mem
 CPU_LIMIT=$cpu_limit
-DOCKER_IMAGE=gvoze32/code-server:jammy
+DOCKER_IMAGE=gvoze32/code-server:noble
 EOF
   fi
 
@@ -1247,7 +1221,7 @@ portlist() {
 updates() {
   echo "Checking for updates..."
 
-  REPO_URL="https://hostingjaya.ninja/api/mirror/codecli?raw=true"
+  REPO_URL="https://hostingjaya.ninja/api/mirror/code-server/codecli?raw=true"
   max_attempts=3
   attempt=1
 

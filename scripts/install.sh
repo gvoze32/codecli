@@ -100,93 +100,6 @@ second_dep() {
 }
 
 case $ubuntu_version in
-22.04)
-  # Set NEEDRESTART frontend to avoid prompts
-  sed -i "/#\$nrconf{restart} = 'i';/s/.*/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
-  sed -i "s/#\$nrconf{kernelhints} = -1;/\$nrconf{kernelhints} = -1;/g" /etc/needrestart/needrestart.conf
-  export DEBIAN_FRONTEND=noninteractive
-  export NEEDRESTART_SUSPEND=1
-  export NEEDRESTART_MODE=l
-
-  echo "Setting up Ubuntu $ubuntu_version.."
-
-  # Update packages
-  update_packages
-
-  # Install dependencies
-  sudo apt install -y nodejs at git npm build-essential python3 python3-pip zip unzip
-  systemctl start atd
-
-  # Install additional dependencies
-  second_dep
-
-  # Install rclone
-  curl https://rclone.org/install.sh | sudo bash
-
-  install_docker_app
-  install_docker
-  install_docker_memlimit
-  blank_env
-  custom_docker_size
-
-  #Cleanup
-  rm install.sh
-  ;;
-20.04)
-  # Set NEEDRESTART frontend to avoid prompts
-  export DEBIAN_FRONTEND=noninteractive
-  export NEEDRESTART_SUSPEND=1
-  export NEEDRESTART_MODE=l
-
-  echo "Setting up Ubuntu $ubuntu_version.."
-
-  # Update packages
-  update_packages
-
-  # Install dependencies
-  sudo apt install -y nodejs at git npm build-essential python3 python3-pip zip unzip
-  systemctl start atd
-
-  # Install additional dependencies
-  second_dep
-
-  # Install rclone
-  curl https://rclone.org/install.sh | sudo bash
-
-  install_docker_app
-  install_docker
-  install_docker_memlimit
-  blank_env
-  custom_docker_size
-
-  #Cleanup
-  rm install.sh
-  ;;
-18.04)
-  echo "Setting up Ubuntu $ubuntu_version.."
-
-  # Update packages
-  update_packages
-
-  # Install dependencies
-  sudo apt install -y nodejs curl at git npm build-essential python3 python3-pip zip unzip
-  systemctl start atd
-
-  # Install additional dependencies
-  second_dep
-
-  # Install rclone
-  curl https://rclone.org/install.sh | sudo bash
-
-  install_docker_app
-  install_docker
-  install_docker_memlimit
-  blank_env
-  custom_docker_size
-
-  #Cleanup
-  rm install.sh
-  ;;
 24.04)
   # Set NEEDRESTART frontend to avoid prompts
   sed -i "/#\$nrconf{restart} = 'i';/s/.*/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
@@ -220,6 +133,7 @@ case $ubuntu_version in
   rm install.sh
   ;;
 *)
-  echo "Versi Ubuntu tidak didukung"
+  echo "Unsupported Ubuntu version. Only Ubuntu 24.04 is supported."
+  exit 1
   ;;
 esac

