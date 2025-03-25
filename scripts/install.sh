@@ -128,9 +128,6 @@ case $ubuntu_version in
   install_docker_memlimit
   blank_env
   custom_docker_size
-
-  #Cleanup
-  rm install.sh
   ;;
 *)
   echo "Unsupported Ubuntu version. Only Ubuntu 24.04 is supported."
