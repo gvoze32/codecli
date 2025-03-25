@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="2.10"
+VERSION="2.11"
 
 if [ "$(id -u)" != "0" ]; then
   echo "codecli must be run as root!" 1>&2
@@ -1298,22 +1298,20 @@ auth: password
 password: $password
 cert: false
 user-data-dir: /var/lib/code-server
+workspace-dir: $WORKSPACE_DIR
 EOF
 
-  echo "Starting Code-Server..."
-  cd "$WORKSPACE_DIR"
-  code-server &
+  echo "Starting Code-Server using systemd..."
+  systemctl enable --now code-server@$USER
 
   echo -e "Quick Code-Server Installation Complete!"
   echo -e "Access Code-Server IDE at: http://$ipvpsmu:8080"
+  echo -e "To check status: systemctl status code-server@$USER"
+  echo -e "To stop: systemctl stop code-server@$USER"
 }
 
 restartquickcreate() {
   echo -e "Restarting Code-Server..."
-
-  echo "Stopping existing Code-Server..."
-  pkill -f "code-server"
-  sleep 3
 
   ipvpsmu=$(curl -s ifconfig.me)
   echo "Server IP: $ipvpsmu"
@@ -1326,9 +1324,8 @@ restartquickcreate() {
     return 1
   fi
 
-  echo "Starting Code-Server..."
-  cd /root/workspace
-  code-server &
+  echo "Restarting Code-Server using systemd..."
+  systemctl restart code-server@$USER
 
   echo -e "Code-Server Successfully Restarted!"
   echo -e "Access Code-Server IDE at: http://$ipvpsmu:8080"
@@ -1337,9 +1334,7 @@ restartquickcreate() {
 fixquickcreate() {
   echo "Fixing Code-Server..."
 
-  echo "Stopping existing Code-Server..."
-  pkill -f "code-server"
-  sleep 3
+  ipvpsmu=$(curl -s ifconfig.me)
 
   CONFIG_FILE="/root/.codecli/quickcreate.conf"
   if [ -f "$CONFIG_FILE" ]; then
@@ -1349,23 +1344,25 @@ fixquickcreate() {
     return 1
   fi
 
+  echo "Stopping Code-Server..."
+  systemctl stop code-server@$USER
+
   echo "Reinstalling Code-Server..."
   curl -fsSL https://code-server.dev/install.sh | sh
 
   mkdir -p ~/.config/code-server
+  WORKSPACE_DIR="/root/workspace"
   cat >~/.config/code-server/config.yaml <<EOF
 bind-addr: 0.0.0.0:8080
 auth: password
 password: $PASSWORD
 cert: false
 user-data-dir: /var/lib/code-server
+workspace-dir: $WORKSPACE_DIR
 EOF
 
-  ipvpsmu=$(curl -s ifconfig.me)
-
-  echo "Starting Code-Server..."
-  cd /root/workspace
-  code-server &
+  echo "Restarting Code-Server using systemd..."
+  systemctl enable --now code-server@$USER
 
   echo -e "Code-Server Fix Complete!"
   echo -e "Access Code-Server IDE at: http://$ipvpsmu:8080"
