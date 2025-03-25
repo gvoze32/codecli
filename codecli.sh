@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="2.11"
+VERSION="2.12"
 
 if [ "$(id -u)" != "0" ]; then
   echo "codecli must be run as root!" 1>&2
@@ -96,6 +96,8 @@ bantuan() {
   echo "quickcreate         : Quick create code server workspace in root"
   echo "  restart           : Restart quick created code server"
   echo "  fix               : Fix quick created code server installation"
+  echo "  status            : Check status of quick created code server"
+  echo "  stop              : Stop quick created code server"
   echo "create"
   echo "  systemd           : Create a new SystemD workspace"
   echo "  systemdlimit      : Create a new SystemD workspace with limited RAM"
@@ -1008,6 +1010,8 @@ resetdocker() {
   docker compose -p $user up -d
 }
 
+# MANAGEMENTS
+
 backups() {
   while getopts "n:h:f:s:" opt; do
     case $opt in
@@ -1306,8 +1310,6 @@ EOF
 
   echo -e "Quick Code-Server Installation Complete!"
   echo -e "Access Code-Server IDE at: http://$ipvpsmu:8080"
-  echo -e "To check status: systemctl status code-server@$USER"
-  echo -e "To stop: systemctl stop code-server@$USER"
 }
 
 restartquickcreate() {
@@ -1368,6 +1370,43 @@ EOF
   echo -e "Access Code-Server IDE at: http://$ipvpsmu:8080"
 }
 
+statusquickcreate() {
+  echo -e "Checking Code-Server Status..."
+
+  ipvpsmu=$(curl -s ifconfig.me)
+  echo "Server IP: $ipvpsmu"
+
+  CONFIG_FILE="/root/.codecli/quickcreate.conf"
+  if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Configuration file not found. It seems code-server has not been set up with 'codecli quickcreate'."
+    return 1
+  fi
+
+  echo "Checking Code-Server status using systemd..."
+  systemctl status code-server@$USER
+
+  echo
+  echo -e "Access Code-Server IDE at: http://$ipvpsmu:8080"
+}
+
+stopquickcreate() {
+  echo -e "Stopping Code-Server..."
+
+  ipvpsmu=$(curl -s ifconfig.me)
+  echo "Server IP: $ipvpsmu"
+
+  CONFIG_FILE="/root/.codecli/quickcreate.conf"
+  if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Configuration file not found. It seems code-server has not been set up with 'codecli quickcreate'."
+    return 1
+  fi
+
+  echo "Stopping Code-Server using systemd..."
+  systemctl stop code-server@$USER
+
+  echo -e "Code-Server Successfully Stopped!"
+}
+
 # BASIC MENUS
 
 helps() {
@@ -1390,6 +1429,12 @@ quickcreate)
     ;;
   fix)
     fixquickcreate
+    ;;
+  status)
+    statusquickcreate
+    ;;
+  stop)
+    stopquickcreate
     ;;
   "")
     quickcreatecode
