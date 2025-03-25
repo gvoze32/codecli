@@ -1281,16 +1281,31 @@ quickcreatecode() {
   WORKSPACE_DIR="/root/workspace"
   mkdir -p "$WORKSPACE_DIR"
 
+  read -s -p "Enter password for Code-Server: " password
+  echo
+
+  CONFIG_DIR="/root/.codecli"
+  mkdir -p "$CONFIG_DIR"
+  echo "PASSWORD=$password" >"$CONFIG_DIR/quickcreate.conf"
+
   echo "Installing Code-Server..."
   curl -fsSL https://code-server.dev/install.sh | sh
 
+  mkdir -p ~/.config/code-server
+  cat >~/.config/code-server/config.yaml <<EOF
+bind-addr: 0.0.0.0:8080
+auth: password
+password: $password
+cert: false
+user-data-dir: /var/lib/code-server
+EOF
+
   echo "Starting Code-Server..."
-  echo "Access Code-Server IDE at: http://$ipvpsmu:8080"
-  PASSWORD="password" code-server --bind-addr 0.0.0.0:8080 --user-data-dir /var/lib/code-server --auth password --without-connection-token "$WORKSPACE_DIR" &
+  cd "$WORKSPACE_DIR"
+  code-server &
 
   echo -e "Quick Code-Server Installation Complete!"
   echo -e "Access Code-Server IDE at: http://$ipvpsmu:8080"
-  echo -e "Default password: password"
 }
 
 restartquickcreate() {
@@ -1303,12 +1318,20 @@ restartquickcreate() {
   ipvpsmu=$(curl -s ifconfig.me)
   echo "Server IP: $ipvpsmu"
 
+  CONFIG_FILE="/root/.codecli/quickcreate.conf"
+  if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+  else
+    echo "Configuration file not found. Please run 'codecli quickcreate' first."
+    return 1
+  fi
+
   echo "Starting Code-Server..."
-  PASSWORD="password" code-server --bind-addr 0.0.0.0:8080 --user-data-dir /var/lib/code-server --auth password --without-connection-token "/root/workspace" &
+  cd /root/workspace
+  code-server &
 
   echo -e "Code-Server Successfully Restarted!"
   echo -e "Access Code-Server IDE at: http://$ipvpsmu:8080"
-  echo -e "Default password: password"
 }
 
 fixquickcreate() {
@@ -1318,17 +1341,34 @@ fixquickcreate() {
   pkill -f "code-server"
   sleep 3
 
+  CONFIG_FILE="/root/.codecli/quickcreate.conf"
+  if [ -f "$CONFIG_FILE" ]; then
+    source "$CONFIG_FILE"
+  else
+    echo "Configuration file not found. Please run 'codecli quickcreate' first."
+    return 1
+  fi
+
   echo "Reinstalling Code-Server..."
   curl -fsSL https://code-server.dev/install.sh | sh
+
+  mkdir -p ~/.config/code-server
+  cat >~/.config/code-server/config.yaml <<EOF
+bind-addr: 0.0.0.0:8080
+auth: password
+password: $PASSWORD
+cert: false
+user-data-dir: /var/lib/code-server
+EOF
 
   ipvpsmu=$(curl -s ifconfig.me)
 
   echo "Starting Code-Server..."
-  PASSWORD="password" code-server --bind-addr 0.0.0.0:8080 --user-data-dir /var/lib/code-server --auth password --without-connection-token "/root/workspace" &
+  cd /root/workspace
+  code-server &
 
   echo -e "Code-Server Fix Complete!"
   echo -e "Access Code-Server IDE at: http://$ipvpsmu:8080"
-  echo -e "Default password: password"
 }
 
 # BASIC MENUS
