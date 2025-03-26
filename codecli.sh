@@ -165,14 +165,13 @@ createnewsystemd() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Username : " user
+    read -p "Username: " user
   fi
   if [[ -z "$password" ]]; then
-    read -p "Password : " password
-    echo
+    read -p "Password: " password
   fi
   if [[ -z "$port" ]]; then
-    read -p "Port : " port
+    read -p "Port: " port
   fi
 
   apt-get update -y
@@ -238,7 +237,6 @@ createnewsystemdlimit() {
   fi
   if [[ -z "$password" ]]; then
     read -p "Password: " password
-    echo
   fi
   if [[ -z "$port" ]]; then
     read -p "Port: " port
@@ -315,7 +313,6 @@ createnewdocker() {
   fi
   if [[ -z "$password" ]]; then
     read -p "Password: " password
-    echo
   fi
   if [[ -z "$port" ]]; then
     read -p "Port: " port
@@ -376,7 +373,6 @@ createnewdockermemlimit() {
   fi
   if [[ -z "$password" ]]; then
     read -p "Password: " password
-    echo
   fi
   if [[ -z "$port" ]]; then
     read -p "Port: " port
