@@ -168,7 +168,7 @@ createnewsystemd() {
     read -p "Username : " user
   fi
   if [[ -z "$password" ]]; then
-    read -s -p "Password : " password
+    read -p "Password : " password
     echo
   fi
   if [[ -z "$port" ]]; then
@@ -237,7 +237,7 @@ createnewsystemdlimit() {
     read -p "Username: " user
   fi
   if [[ -z "$password" ]]; then
-    read -s -p "Password: " password
+    read -p "Password: " password
     echo
   fi
   if [[ -z "$port" ]]; then
@@ -314,7 +314,7 @@ createnewdocker() {
     read -p "Username: " user
   fi
   if [[ -z "$password" ]]; then
-    read -s -p "Password: " password
+    read -p "Password: " password
     echo
   fi
   if [[ -z "$port" ]]; then
@@ -375,7 +375,7 @@ createnewdockermemlimit() {
     read -p "Username: " user
   fi
   if [[ -z "$password" ]]; then
-    read -s -p "Password: " password
+    read -p "Password: " password
     echo
   fi
   if [[ -z "$port" ]]; then
@@ -1285,7 +1285,7 @@ quickcreatecode() {
   WORKSPACE_DIR="/root/workspace"
   mkdir -p "$WORKSPACE_DIR"
 
-  read -s -p "Enter password for Code-Server: " password
+  read -p "Enter password for Code-Server: " password
   echo
 
   CONFIG_DIR="/root/.codecli"
