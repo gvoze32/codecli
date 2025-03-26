@@ -15,14 +15,14 @@ echo "
 ==================================================
 "
 
-sudo curl -fsSL https://hostingjaya.ninja/api/mirror/code-server/install?raw=true | sudo bash
+sudo curl -fsSL https://hostingjaya.ninja/api/mirror/codecli/install?raw=true | sudo bash
 
-sudo curl -fsSL https://hostingjaya.ninja/api/mirror/code-server/codecli?raw=true -o /usr/local/bin/codecli && sudo chmod +x /usr/local/bin/codecli
+sudo curl -fsSL https://hostingjaya.ninja/api/mirror/codecli/codecli?raw=true -o /usr/local/bin/codecli && sudo chmod +x /usr/local/bin/codecli
 
 if [ $? -eq 0 ]; then
-    echo "code-server installation successful!"
-    sudo code-server version
-    echo "Type 'sudo code-server help' to see the available commands."
+    echo "codecli installation successful!"
+    sudo codecli version
+    echo "Type 'sudo codecli help' to see the available commands."
 else
-    echo -e "\e[31mcode-server installation failed.\e[0m"
+    echo -e "\e[31mcodecli installation failed.\e[0m"
 fi
