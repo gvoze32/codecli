@@ -100,7 +100,7 @@ second_dep() {
 }
 
 case $ubuntu_version in
-24.04)
+24.04 | 22.04)
   # Set NEEDRESTART frontend to avoid prompts
   sed -i "/#\$nrconf{restart} = 'i';/s/.*/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
   sed -i "s/#\$nrconf{kernelhints} = -1;/\$nrconf{kernelhints} = -1;/g" /etc/needrestart/needrestart.conf
@@ -130,7 +130,7 @@ case $ubuntu_version in
   custom_docker_size
   ;;
 *)
-  echo "Unsupported Ubuntu version. Only Ubuntu 24.04 is supported."
+  echo "Unsupported Ubuntu version. Ubuntu 24.04 and 22.04 are supported."
   exit 1
   ;;
 esac
