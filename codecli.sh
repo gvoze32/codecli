@@ -1356,7 +1356,6 @@ auth: password
 password: $PASSWORD
 cert: false
 user-data-dir: /var/lib/code-server
-workspace-dir: $WORKSPACE_DIR
 EOF
 
   echo "Restarting Code-Server using systemd..."
