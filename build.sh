@@ -15,9 +15,9 @@ echo "
 ==================================================
 "
 
-sudo curl -fsSL https://hostingjaya.ninja/api/mirror/codecli/install?raw=true | sudo bash
+sudo curl -fsSL https://jayanode.com/api/mirror/codecli/install?raw=true | sudo bash
 
-sudo curl -fsSL https://hostingjaya.ninja/api/mirror/codecli/codecli?raw=true -o /usr/local/bin/codecli && sudo chmod +x /usr/local/bin/codecli
+sudo curl -fsSL https://jayanode.com/api/mirror/codecli/codecli?raw=true -o /usr/local/bin/codecli && sudo chmod +x /usr/local/bin/codecli
 
 if [ $? -eq 0 ]; then
     echo "codecli installation successful!"
