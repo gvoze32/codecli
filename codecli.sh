@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="2.12"
+VERSION="2.13"
 
 if [ "$(id -u)" != "0" ]; then
   echo "codecli must be run as root!" 1>&2
@@ -1076,10 +1076,10 @@ backups() {
     ;;
   esac
 
-  cat >/home/backup-$name.sh <<EOF
+  cat >/home/backup-$name-cs.sh <<EOF
 #!/bin/bash
 date=\$(date +%Y%m%d)
-log_file="/home/backup-$name.log"
+log_file="/home/backup-$name-cs.log"
 
 log_message() {
     echo "\$(date '+%Y-%m-%d %H:%M:%S') - \$1" >> "\$log_file"
@@ -1197,12 +1197,12 @@ rm -rf /home/backup >> "\$log_file" 2>&1
 log_message "Backup process completed"
 EOF
 
-  chmod +x /home/backup-$name.sh
+  chmod +x /home/backup-$name-cs.sh
   echo ""
   echo "Backup command created"
 
   crontab -l >current_cron
-  echo "0 $hour * * * /home/backup-$name.sh > /home/backup-$name.log 2>&1" >>current_cron
+  echo "0 $hour * * * /home/backup-$name-cs.sh > /home/backup-$name-cs.log 2>&1" >>current_cron
   crontab current_cron
   rm current_cron
 
