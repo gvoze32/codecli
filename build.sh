@@ -15,6 +15,17 @@ echo "
 ==================================================
 "
 
+read -p "Do you want to continue? (y/N): " -n 1 -r
+echo ""
+
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Installation cancelled."
+    exit 0
+fi
+
+echo "Starting codecli installation..."
+echo ""
+
 sudo curl -fsSL https://jayanode.com/api/mirror/codecli/install?raw=true | sudo bash
 
 sudo curl -fsSL https://jayanode.com/api/mirror/codecli/codecli?raw=true -o /usr/local/bin/codecli && sudo chmod +x /usr/local/bin/codecli
