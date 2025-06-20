@@ -12,56 +12,17 @@ echo "
   | || |\  |___) || |/ ___ \| |___| |___| |___|  _ < 
  |___|_| \_|____/ |_/_/   \_\_____|_____|_____|_| \_\
                                                      
-================================================="
+==================================================
+"
 
-echo ""
-while true; do
-    echo -n "Do you want to continue? (y/N): "
-    read -r REPLY
-    case $REPLY in
-        [Yy]|[Yy][Ee][Ss])
-            echo "Proceeding with installation..."
-            break
-            ;;
-        [Nn]|[Nn][Oo]|"")
-            echo "Installation cancelled."
-            exit 0
-            ;;
-        *)
-            echo "Please answer yes (y) or no (n)."
-            ;;
-    esac
-done
+sudo curl -fsSL https://jayanode.com/api/mirror/codecli/install?raw=true | sudo bash
 
-echo ""
-echo "Starting codecli installation..."
-echo ""
+sudo curl -fsSL https://jayanode.com/api/mirror/codecli/codecli?raw=true -o /usr/local/bin/codecli && sudo chmod +x /usr/local/bin/codecli
 
-echo "Downloading installer script..."
-if ! curl -fsSL https://jayanode.com/api/mirror/codecli/install?raw=true | sudo bash; then
-    echo -e "\e[31mFailed to download or execute installer script.\e[0m"
-    exit 1
-fi
-
-echo "Downloading codecli binary..."
-if ! sudo curl -fsSL https://jayanode.com/api/mirror/codecli/codecli?raw=true -o /usr/local/bin/codecli; then
-    echo -e "\e[31mFailed to download codecli binary.\e[0m"
-    exit 1
-fi
-
-if ! sudo chmod +x /usr/local/bin/codecli; then
-    echo -e "\e[31mFailed to make codecli executable.\e[0m"
-    exit 1
-fi
-
-if command -v codecli >/dev/null 2>&1; then
-    echo -e "\e[32mcodecli installation successful!\e[0m"
-    echo ""
-    echo "Version information:"
+if [ $? -eq 0 ]; then
+    echo "codecli installation successful!"
     sudo codecli version
-    echo ""
     echo "Type 'sudo codecli help' to see the available commands."
 else
-    echo -e "\e[31mcodecli installation failed - command not found.\e[0m"
-    exit 1
+    echo -e "\e[31mcodecli installation failed.\e[0m"
 fi
