@@ -1148,7 +1148,7 @@ for folder in codeusers codeusersmemlimit; do
             user=\${user_folder%/}
             log_message "Backing up \$user from \$folder"
             
-            if ! zip -r "/home/backup/\$folder-\$user-\$date.zip" "\$user_folder" -x "*/workspace/.vscode-server/*" >> "\$log_file" 2>&1; then
+            if ! zip -r "/home/backup/\$folder-\$user-\$date.zip" "\$user_folder" -x "*/workspace/.vscode-server/*" -x "*/node_modules/*" >> "\$log_file" 2>&1; then
                 log_message "ERROR: Failed to create zip for \$user in \$folder"
                 continue
             fi
