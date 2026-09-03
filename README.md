@@ -12,6 +12,8 @@ codecli is a command-line interface tool for creating and managing secure code-s
 - Schedule workspace deletions
 - Backup workspaces to cloud storage
 - Monitor port usage and container status
+- Set optional memory, CPU, and ext4 user-quota limits for Docker workspaces
+- Select a custom Docker image with `-i`
 
 ## Installation
 
@@ -43,13 +45,22 @@ codecli quickcreate
 
 ## Supported Environments
 
-- Debian-based systems (Ubuntu 24.04)
+- Debian-based systems (Ubuntu 22.04, 24.04, 26.04)
+- Docker workspaces use the LinuxServer Code-Server image by default; custom images are supported.
 
 ## Backup
 
 codecli supports backing up workspaces to various cloud storage providers using Rclone.
 
 To set up a backup, use the `codecli backup` command and follow the prompts.
+
+Additional folders or files can be included in every archive with the repeatable `-a` option. Paths are resolved from each Docker root directory (`/home/codeusers` or `/home/codeusersmemlimit`) and may use `{folder}` and `{user}` placeholders:
+
+```bash
+codecli backup -n drive -h 2 -f backups -s 1 -a 'additional/{user}/data'
+```
+
+Storage limits require an ext4 filesystem mounted with `usrquota`. Use `-q 10G`, `-q 500M`, or `-q 0` (unlimited) when creating a Docker workspace.
 
 ## Updating
 

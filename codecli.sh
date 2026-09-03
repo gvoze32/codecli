@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="2.13"
+VERSION="2.14"
 
 if [ "$(id -u)" != "0" ]; then
   echo "codecli must be run as root!" 1>&2
@@ -7,6 +7,112 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 ubuntu_version=$(lsb_release -r | awk '{print $2}')
+parse_quota_limit() {
+  local raw="$1"
+  raw="$(echo "$raw" | tr -d ' ')"
+
+  if [[ -z "$raw" ]]; then
+    echo ""
+    return 1
+  fi
+
+  if [[ "$raw" == "0" ]]; then
+    echo "0"
+    return 0
+  fi
+
+  if [[ "$raw" =~ ^([0-9]+)([MmGg])$ ]]; then
+    local num="${BASH_REMATCH[1]}"
+    local unit="${BASH_REMATCH[2]}"
+    case "$unit" in
+      M|m) echo $(( num * 1024 )) ;;
+      G|g) echo $(( num * 1024 * 1024 )) ;;
+      *) echo "" ; return 1 ;;
+    esac
+    return 0
+  fi
+
+  echo ""
+  return 1
+}
+
+ensure_ext4_usrquota_ready_for_path() {
+  local target_path="$1"
+
+  if ! command -v quotacheck >/dev/null 2>&1 || ! command -v quotaon >/dev/null 2>&1 || ! command -v setquota >/dev/null 2>&1; then
+    echo "WARN! quota tools not found (quotacheck/quotaon/setquota). Install 'quota' package to enable storage limits."
+    return 1
+  fi
+
+  local mountpoint
+  mountpoint="$(df -P "$target_path" 2>/dev/null | awk 'NR==2{print $6}')"
+  if [[ -z "$mountpoint" ]]; then
+    echo "WARN! Unable to determine mount point for $target_path. Storage limit skipped."
+    return 1
+  fi
+
+  local fstype
+  fstype="$(df -T -P "$target_path" 2>/dev/null | awk 'NR==2{print $2}')"
+  if [[ "$fstype" != "ext4" ]]; then
+    echo "WARN! Filesystem for $target_path is '$fstype' (not ext4). Storage limit skipped."
+    return 1
+  fi
+
+  if ! mount | awk -v mp="$mountpoint" '$3==mp{print $0}' | grep -q 'usrquota'; then
+    echo "WARN! usrquota is not enabled on mount point '$mountpoint'."
+    echo "      Enable it in /etc/fstab (add 'usrquota') then reboot, or remount with usrquota."
+    echo "      Storage limit skipped."
+    return 1
+  fi
+
+  if [[ ! -f "$mountpoint/aquota.user" ]]; then
+    echo "Initializing quota files on $mountpoint ..."
+    quotacheck -cum "$mountpoint" >/dev/null 2>&1 || true
+  fi
+
+  quotaon -u "$mountpoint" >/dev/null 2>&1 || true
+
+  return 0
+}
+
+set_user_storage_quota_for_path() {
+  local q_user="$1"
+  local limit_str="$2"
+  local ws_path="$3"
+
+  if [[ -z "$q_user" || -z "$limit_str" || -z "$ws_path" ]]; then
+    echo "WARN! Missing args for storage limit; skipped."
+    return 1
+  fi
+
+  local kb
+  kb="$(parse_quota_limit "$limit_str")"
+  if [[ -z "$kb" ]]; then
+    echo "WARN! Invalid storage limit '$limit_str' (use e.g. 10G, 500M, 0). Skipped."
+    return 1
+  fi
+
+  if ! ensure_ext4_usrquota_ready_for_path "$ws_path"; then
+    return 1
+  fi
+
+  local mountpoint
+  mountpoint="$(df -P "$ws_path" 2>/dev/null | awk 'NR==2{print $6}')"
+  if [[ -z "$mountpoint" ]]; then
+    echo "WARN! Unable to determine mount point for $ws_path. Storage limit skipped."
+    return 1
+  fi
+
+  if [[ "$kb" == "0" ]]; then
+    echo "Setting storage limit: unlimited (quota cleared) for user '$q_user' on $mountpoint"
+    setquota -u "$q_user" 0 0 0 0 "$mountpoint" >/dev/null 2>&1 || true
+    return 0
+  fi
+
+  echo "Setting storage limit: $limit_str for user '$q_user' on $mountpoint"
+  setquota -u "$q_user" "$kb" "$kb" 0 0 "$mountpoint" >/dev/null 2>&1 || true
+  return 0
+}
 
 check_update() {
   echo "Checking for available updates..."
@@ -81,7 +187,7 @@ about() {
   echo "Name of File  : codecli.sh"
   echo "Version       : $VERSION"
   echo "Tested on     :"
-  echo "    - Debian  : Ubuntu 24.04"
+  echo "    - Debian  : Ubuntu 22.04, 24.04, 26.04"
   echo
   echo "Built with love♡ by gvoze32"
 }
@@ -139,12 +245,14 @@ bantuan() {
   echo "-o                  : Port number"
   echo "-l                  : Memory limit (e.g., 1024m)"
   echo "-c                  : CPU limit (e.g., 10% or 1.0)"
-  echo "-i                  : Image (e.g., linuxserver/code-server:latest)"
+  echo "-i                  : Image (e.g., lscr.io/linuxserver/code-server:latest)"
   echo "-t                  : Type (e.g., 1 for Docker, 2 for Docker Memory Limit)"
+  echo "-q                  : Storage limit for workspace (ext4 quota, e.g., 10G / 500M; 0=unlimited)"
   echo "-n                  : Rclone remote name"
   echo "-h                  : Backup hour"
   echo "-f                  : Backup folder name"
   echo "-s                  : Backup service provider"
+  echo "-a                  : Additional folder/file (repeatable)"
   echo
   echo "Copyright (c) 2024 codecli (under MIT License)"
   echo "Built with love♡ by gvoze32"
@@ -155,6 +263,7 @@ bantuan() {
 createnewsystemd() {
   local user password port
 
+  OPTIND=1
   while getopts "u:p:o:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -165,28 +274,28 @@ createnewsystemd() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Username: " user
+    read -rp "Username: " user
   fi
   if [[ -z "$password" ]]; then
-    read -p "Password: " password
+    read -rp "Password: " password
   fi
   if [[ -z "$port" ]]; then
-    read -p "Port: " port
+    read -rp "Port: " port
   fi
 
   apt-get update -y
   apt-get upgrade -y
 
-  sudo adduser --disabled-password --gecos "" $user
-  sudo echo -e "$password\n$password" | passwd $user
+  sudo adduser --disabled-password --gecos "" "$user"
+  sudo echo -e "$password\n$password" | passwd "$user"
 
-  sudo chown -R $user:$user /home/$user
+  sudo chown -R "$user":"$user" /home/"$user"
 
-  sudo -u $user -H sh -c "curl -fsSL https://code-server.dev/install.sh | sh"
+  sudo -u "$user" -H sh -c "curl -fsSL https://code-server.dev/install.sh | sh"
 
-  sudo chmod 700 /home/$user/ -R
+  sudo chmod 700 /home/"$user"/ -R
 
-  cat >/lib/systemd/system/code-$user.service <<EOF
+  cat >"/lib/systemd/system/code-$user.service" <<EOF
 [Unit]
 Description=code-server for $user
 After=network.target
@@ -212,15 +321,16 @@ WantedBy=multi-user.target
 EOF
 
   systemctl daemon-reload
-  systemctl enable code-$user.service
-  systemctl restart code-$user.service
+  systemctl enable "code-$user.service"
+  systemctl restart "code-$user.service"
   sleep 10
-  systemctl status code-$user.service
+  systemctl status "code-$user.service"
 }
 
 createnewsystemdlimit() {
   local user password port limit cpu_limit
 
+  OPTIND=1
   while getopts "u:p:o:l:c:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -233,34 +343,35 @@ createnewsystemdlimit() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Username: " user
+    read -rp "Username: " user
   fi
   if [[ -z "$password" ]]; then
-    read -p "Password: " password
+    read -rp "Password: " password
   fi
   if [[ -z "$port" ]]; then
-    read -p "Port: " port
+    read -rp "Port: " port
   fi
   if [[ -z "$limit" ]]; then
-    read -p "Memory Limit (e.g., 1024m): " limit
+    read -rp "Memory Limit (e.g., 1024m): " limit
   fi
   if [[ -z "$cpu_limit" ]]; then
-    read -p "CPU Limit (e.g., 10%): " cpu_limit
+    read -rp "CPU Limit (e.g., 10%): " cpu_limit
   fi
 
   apt-get update -y
   apt-get upgrade -y
 
-  sudo adduser --disabled-password --gecos "" $user
-  sudo echo -e "$password\n$password" | passwd $user
+  sudo adduser --disabled-password --gecos "" "$user"
+  sudo echo -e "$password\n$password" | passwd "$user"
 
-  sudo chown -R $user:$user /home/$user
+  sudo chown -R "$user":"$user" /home/"$user"
 
-  sudo -u $user -H sh -c "curl -fsSL https://code-server.dev/install.sh | sh"
+  sudo -u "$user" -H sh -c "curl -fsSL https://code-server.dev/install.sh | sh"
 
-  sudo chmod 700 /home/$user/ -R
+  sudo chmod 700 /home/"$user"/ -R
 
-  cat >/lib/systemd/system/code-$user.service <<EOF
+
+  cat >"/lib/systemd/system/code-$user.service" <<EOF
 [Unit]
 Description=code-server for $user
 After=network.target
@@ -289,39 +400,44 @@ WantedBy=multi-user.target
 EOF
 
   systemctl daemon-reload
-  systemctl enable code-$user.service
-  systemctl restart code-$user.service
+  systemctl enable "code-$user.service"
+  systemctl restart "code-$user.service"
   sleep 10
-  systemctl status code-$user.service
+  systemctl status "code-$user.service"
 }
 
 # CREATE DOCKER
 
 createnewdocker() {
-  while getopts "u:p:o:i:" opt; do
+  OPTIND=1
+  while getopts "u:p:o:i:q:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
     p) password="$OPTARG" ;;
     o) port="$OPTARG" ;;
     i) image="$OPTARG" ;;
+    q) storage_limit="$OPTARG" ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ;;
     esac
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Username: " user
+    read -rp "Username: " user
   fi
   if [[ -z "$password" ]]; then
-    read -p "Password: " password
+    read -rp "Password: " password
   fi
   if [[ -z "$port" ]]; then
-    read -p "Port: " port
+    read -rp "Port: " port
   fi
   if [[ -z "$image" ]]; then
     echo "Using Ubuntu 24.04 image"
-    image="linuxserver/code-server:latest"
+    image="lscr.io/linuxserver/code-server:latest"
   else
     echo "Using provided image: $image"
+  fi
+  if [[ -z "$storage_limit" ]]; then
+    read -rp "Storage Limit (ext4 quota, e.g., 10G; 0=unlimited, blank=skip): " storage_limit
   fi
   echo
   echo "Creating docker container:"
@@ -329,25 +445,32 @@ createnewdocker() {
   echo "Password: $password"
   echo "Port: $port"
   echo "Image: $image"
+  if [[ -n "$storage_limit" ]]; then
+    echo "Storage Limit: $storage_limit"
+  fi
 
-  cd /home/codeusers
-  rm .env
+  cd /home/codeusers || return 1
+  rm -f .env
   cat >/home/codeusers/.env <<EOF
 PORT=$port
 NAMA_PELANGGAN=$user
 PASSWORD_PELANGGAN=$password
 DOCKER_IMAGE=$image
 EOF
-  sudo docker compose -p $user up -d
-  if [ -d "/home/codeusers/$user/config/workspace" ]; then
-    cd /home/codeusers/$user/config/workspace
+  sudo docker compose -p "$user" up -d
+  if [ -d "/home/codeusers/$user" ]; then
+    if [[ -n "$storage_limit" ]]; then
+      set_user_storage_quota_for_path "$user" "$storage_limit" "/home/codeusers/$user" || true
+    fi
+
+    cd /home/codeusers/"$user"/config/workspace || return 1
 
     ### Your custom default bundling files goes here, it's recommended to put it on resources directory
     ### START
 
     ### END
 
-    cd
+    cd ~ || true
   else
     echo -e "\033[33mWARN! Workspace directory not found - Ignore this message if you are not adding default bundling files\033[0m"
   fi
@@ -356,7 +479,8 @@ EOF
 # CREATE DOCKERLIMIT
 
 createnewdockermemlimit() {
-  while getopts "u:p:o:l:c:i:" opt; do
+  OPTIND=1
+  while getopts "u:p:o:l:c:i:q:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
     p) password="$OPTARG" ;;
@@ -364,30 +488,34 @@ createnewdockermemlimit() {
     l) limit="$OPTARG" ;;
     c) cpu_limit="$OPTARG" ;;
     i) image="$OPTARG" ;;
+    q) storage_limit="$OPTARG" ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ;;
     esac
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Username: " user
+    read -rp "Username: " user
   fi
   if [[ -z "$password" ]]; then
-    read -p "Password: " password
+    read -rp "Password: " password
   fi
   if [[ -z "$port" ]]; then
-    read -p "Port: " port
+    read -rp "Port: " port
   fi
   if [[ -z "$limit" ]]; then
-    read -p "Memory Limit (e.g., 1024m): " limit
+    read -rp "Memory Limit (e.g., 1024m): " limit
   fi
   if [[ -z "$cpu_limit" ]]; then
-    read -p "CPU Limit (e.g., 1.0 for 1 core): " cpu_limit
+    read -rp "CPU Limit (e.g., 1.0 for 1 core): " cpu_limit
   fi
   if [[ -z "$image" ]]; then
     echo "Using Ubuntu 24.04 image"
-    image="linuxserver/code-server:latest"
+    image="lscr.io/linuxserver/code-server:latest"
   else
     echo "Using provided image: $image"
+  fi
+  if [[ -z "$storage_limit" ]]; then
+    read -rp "Storage Limit (ext4 quota, e.g., 10G; 0=unlimited, blank=skip): " storage_limit
   fi
   echo
   echo "Creating docker container with memory limit:"
@@ -397,9 +525,12 @@ createnewdockermemlimit() {
   echo "Memory Limit: $limit"
   echo "CPU Limit: $cpu_limit"
   echo "Image: $image"
+  if [[ -n "$storage_limit" ]]; then
+    echo "Storage Limit: $storage_limit"
+  fi
 
-  cd /home/codeusersmemlimit
-  rm .env
+  cd /home/codeusersmemlimit || return 1
+  rm -f .env
   cat >/home/codeusersmemlimit/.env <<EOF
 PORT=$port
 NAMA_PELANGGAN=$user
@@ -408,16 +539,20 @@ MEMORY=$limit
 CPU_LIMIT=$cpu_limit
 DOCKER_IMAGE=$image
 EOF
-  sudo docker compose -p $user up -d
-  if [ -d "/home/codeusersmemlimit/$user/config/workspace" ]; then
-    cd /home/codeusersmemlimit/$user/config/workspace
+  sudo docker compose -p "$user" up -d
+  if [ -d "/home/codeusersmemlimit/$user" ]; then
+    if [[ -n "$storage_limit" ]]; then
+      set_user_storage_quota_for_path "$user" "$storage_limit" "/home/codeusersmemlimit/$user" || true
+    fi
+
+    cd /home/codeusersmemlimit/"$user"/config/workspace || return 1
 
     ### Your custom default bundling files goes here, it's recommended to put it on resources directory
     ### START
 
     ### END
 
-    cd
+    cd ~ || true
   else
     echo -e "\033[33mWARN! Workspace directory not found - Ignore this message if you are not adding default bundling files\033[0m"
   fi
@@ -426,6 +561,7 @@ EOF
 # MANAGE SYSTEMD
 
 stopsystemd() {
+  OPTIND=1
   while getopts "u:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -434,14 +570,15 @@ stopsystemd() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   sleep 3
-  systemctl stop code-$user.service
+  systemctl stop "code-$user.service"
 }
 
 startsystemd() {
+  OPTIND=1
   while getopts "u:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -450,14 +587,15 @@ startsystemd() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   sleep 3
-  systemctl start code-$user.service
+  systemctl start "code-$user.service"
 }
 
 deletesystemd() {
+  OPTIND=1
   while getopts "u:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -466,19 +604,20 @@ deletesystemd() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   sleep 3
-  systemctl stop code-$user.service
+  systemctl stop "code-$user.service"
   sleep 3
-  killall -u $user
+  killall -u "$user"
   sleep 3
-  userdel $user
-  rm -rf /home/$user
+  userdel "$user"
+  rm -rf /home/"$user"
 }
 
 statussystemd() {
+  OPTIND=1
   while getopts "u:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -487,13 +626,14 @@ statussystemd() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
-  systemctl status code-$user.service
+  systemctl status "code-$user.service"
 }
 
 restartsystemd() {
+  OPTIND=1
   while getopts "u:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -502,17 +642,18 @@ restartsystemd() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   systemctl daemon-reload
-  systemctl enable code-$user.service
-  systemctl restart code-$user.service
+  systemctl enable "code-$user.service"
+  systemctl restart "code-$user.service"
   sleep 10
-  systemctl status code-$user.service
+  systemctl status "code-$user.service"
 }
 
 changepasswordsystemd() {
+  OPTIND=1
   while getopts "u:p:o:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -523,30 +664,31 @@ changepasswordsystemd() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   if [[ -z "$password" ]]; then
-    read -p "Input New Password: " password
+    read -rp "Input New Password: " password
   fi
 
-  if [[ -z "$port" && -n "$OPTARG" ]]; then
-    read -p "Input New Port: " port
+  if [[ -z "$port" ]]; then
+    read -rp "Input New Port: " port
   fi
 
-  sed -i "s/^Environment=PASSWORD=.*/Environment=PASSWORD=$password/" /lib/systemd/system/code-$user.service
+  sed -i "s/^Environment=PASSWORD=.*/Environment=PASSWORD=$password/" "/lib/systemd/system/code-$user.service"
 
   if [[ -n "$port" ]]; then
-    sed -i "s/--bind-addr 0.0.0.0:[0-9]*/--bind-addr 0.0.0.0:$port/" /lib/systemd/system/code-$user.service
+    sed -i "s/--bind-addr 0.0.0.0:[0-9]*/--bind-addr 0.0.0.0:$port/" "/lib/systemd/system/code-$user.service"
   fi
 
   systemctl daemon-reload
-  systemctl restart code-$user.service
+  systemctl restart "code-$user.service"
   sleep 10
-  systemctl status code-$user.service
+  systemctl status "code-$user.service"
 }
 
 schedulesystemd() {
+  OPTIND=1
   while getopts "u:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -555,7 +697,7 @@ schedulesystemd() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   echo " "
@@ -573,14 +715,14 @@ schedulesystemd() {
   echo "now + 1 year"
   echo "midnight"
   echo " "
-  read -p "Time: " waktu
-  at $waktu <<END
+  read -rp "Time: " waktu
+  at "$waktu" <<END
 sleep 3
-systemctl stop code-$user.service
+systemctl stop "code-$user.service"
 sleep 3
-killall -u $user
+killall -u "$user"
 sleep 3
-userdel $user
+userdel "$user"
 END
 }
 
@@ -589,6 +731,7 @@ scheduledatq() {
 }
 
 convertsystemd() {
+  OPTIND=1
   while getopts "u:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -597,23 +740,24 @@ convertsystemd() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   echo "Input user password"
-  passwd $user
+  passwd "$user"
   echo "Warning, code-server will be restart!"
-  usermod -aG sudo $user
+  usermod -aG sudo "$user"
   systemctl daemon-reload
-  systemctl enable code-$user.service
-  systemctl restart code-$user.service
+  systemctl enable "code-$user.service"
+  systemctl restart "code-$user.service"
   sleep 10
-  systemctl status code-$user.service
+  systemctl status "code-$user.service"
 }
 
 # MANAGE DOCKER
 
 stopdocker() {
+  OPTIND=1
   while getopts "u:t:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -623,11 +767,11 @@ stopdocker() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   if [[ -z "$type" ]]; then
-    echo "Are the file is using Docker or Docker Memory Limit?"
+    echo "Is this workspace using Docker or Docker Memory Limit?"
     echo "1. Docker"
     echo "2. Docker Memory Limit"
     read -r -p "Choose: " response
@@ -637,16 +781,17 @@ stopdocker() {
 
   case "$response" in
   1)
-    cd /home/codeusers
+    cd /home/codeusers || return 1
     ;;
   *)
-    cd /home/codeusersmemlimit
+    cd /home/codeusersmemlimit || return 1
     ;;
   esac
-  docker compose -p $user stop
+  docker compose -p "$user" stop
 }
 
 startdocker() {
+  OPTIND=1
   while getopts "u:t:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -656,11 +801,11 @@ startdocker() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   if [[ -z "$type" ]]; then
-    echo "Are the file is using Docker or Docker Memory Limit?"
+    echo "Is this workspace using Docker or Docker Memory Limit?"
     echo "1. Docker"
     echo "2. Docker Memory Limit"
     read -r -p "Choose: " response
@@ -670,16 +815,17 @@ startdocker() {
 
   case "$response" in
   1)
-    cd /home/codeusers
+    cd /home/codeusers || return 1
     ;;
   *)
-    cd /home/codeusersmemlimit
+    cd /home/codeusersmemlimit || return 1
     ;;
   esac
-  docker compose -p $user start
+  docker compose -p "$user" start
 }
 
 deletedocker() {
+  OPTIND=1
   while getopts "u:t:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -689,11 +835,11 @@ deletedocker() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   if [[ -z "$type" ]]; then
-    echo "Are the file is using Docker or Docker Memory Limit?"
+    echo "Is this workspace using Docker or Docker Memory Limit?"
     echo "1. Docker"
     echo "2. Docker Memory Limit"
     read -r -p "Choose: " response
@@ -703,14 +849,14 @@ deletedocker() {
 
   case "$response" in
   1)
-    cd /home/codeusers
+    cd /home/codeusers || return 1
     ;;
   *)
-    cd /home/codeusersmemlimit
+    cd /home/codeusersmemlimit || return 1
     ;;
   esac
-  docker compose -p $user down
-  rm -rf $user
+  docker compose -p "$user" down
+  rm -rf "$user"
 }
 
 listdocker() {
@@ -722,7 +868,8 @@ statusdocker() {
 }
 
 changepassworddocker() {
-  while getopts "u:p:t:o:l:c:" opt; do
+  OPTIND=1
+  while getopts "u:p:t:o:l:c:i:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
     p) newpw="$OPTARG" ;;
@@ -730,20 +877,21 @@ changepassworddocker() {
     o) port="$OPTARG" ;;
     l) mem="$OPTARG" ;;
     c) cpu_limit="$OPTARG" ;;
+    i) image="$OPTARG" ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ;;
     esac
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input Username: " user
+    read -rp "Input Username: " user
   fi
 
   if [[ -z "$newpw" ]]; then
-    read -p "Input New Password: " newpw
+    read -rp "Input New Password: " newpw
   fi
 
   if [[ -z "$port" ]]; then
-    read -p "Input Port: " port
+    read -rp "Input Port: " port
   fi
 
   if [[ -z "$type" ]]; then
@@ -764,10 +912,10 @@ changepassworddocker() {
   2)
     base_dir="/home/codeusersmemlimit"
     if [[ -z "$mem" ]]; then
-      read -p "Memory Limit (e.g., 1024m): " mem
+      read -rp "Memory Limit (e.g., 1024m): " mem
     fi
     if [[ -z "$cpu_limit" ]]; then
-      read -p "CPU Limit (e.g., 1.0 for 1 core): " cpu_limit
+      read -rp "CPU Limit (e.g., 1.0 for 1 core): " cpu_limit
     fi
     ;;
   *)
@@ -776,19 +924,27 @@ changepassworddocker() {
     ;;
   esac
 
+  if [[ -z "$image" ]] && [ -f "$base_dir/.env" ]; then
+    image=$(grep '^DOCKER_IMAGE=' "$base_dir/.env" | cut -d '=' -f2-)
+  fi
+
+  if [[ -z "$image" ]]; then
+    image="lscr.io/linuxserver/code-server:latest"
+  fi
+
   cd "$base_dir" || return
 
   cat >.env <<EOF
 NAMA_PELANGGAN=$user
 PASSWORD_PELANGGAN=$newpw
 PORT=$port
+DOCKER_IMAGE=$image
 EOF
 
   if [ "$response" = "2" ]; then
     cat >>.env <<EOF
 MEMORY=$mem
 CPU_LIMIT=$cpu_limit
-DOCKER_IMAGE=linuxserver/code-server:latest
 EOF
   fi
 
@@ -798,6 +954,7 @@ EOF
 PORT=$port
 NAMA_PELANGGAN=$user
 PASSWORD_PELANGGAN=$newpw
+DOCKER_IMAGE=$image
 EOF
 
     if [ "$response" = "2" ]; then
@@ -807,10 +964,10 @@ CPU_LIMIT=$cpu_limit
 EOF
     fi
 
-    cd "$base_dir"
+    cd "$base_dir" || return 1
     echo "Password, port and .env updated for user $user"
-    docker compose -p $user down
-    docker compose -p $user up -d
+    docker compose -p "$user" down
+    docker compose -p "$user" up -d
     echo "Docker container recreated for user $user"
   else
     echo "User $user does not exist or workspace directory not found"
@@ -818,6 +975,7 @@ EOF
 }
 
 scheduledocker() {
+  OPTIND=1
   while getopts "u:t:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -827,7 +985,7 @@ scheduledocker() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   if [[ -z "$type" ]]; then
@@ -855,89 +1013,90 @@ scheduledocker() {
   echo "now + 1 year"
   echo "midnight"
   echo " "
-  read -p "Time: " waktu
+  read -rp "Time: " waktu
   case "$response" in
   [yY][eE][sS] | [yY])
-    at $waktu <<END
+    at "$waktu" <<END
 cd /home/codeusers
-docker compose -p $user stop
+docker compose -p "$user" stop
 # OPTIONAL: Remove user setup
-# docker compose -p $user down
+# docker compose -p "$user" down
 END
     ;;
   *)
-    at $waktu <<END
+    at "$waktu" <<END
 cd /home/codeusersmemlimit
-docker compose -p $user stop
+docker compose -p "$user" stop
 # OPTIONAL: Remove user setup
-# docker compose -p $user down
+# docker compose -p "$user" down
 END
     ;;
   esac
 }
 
 configuredocker() {
-  read -p "Input User: " user
-  echo 1. Stop
-  echo 2. Start
-  echo 3. Restart
-  read -r -p "Choose: " response
-  case "$response" in
+  read -rp "Input User: " user
+  echo "1. Stop"
+  echo "2. Start"
+  echo "3. Restart"
+  read -r -p "Choose: " action
+  case "$action" in
   1)
-    echo Are the file is using Docker or Docker Memory Limit?
-    echo 1. Docker
-    echo 2. Docker Memory Limit
+    echo "Is this workspace using Docker or Docker Memory Limit?"
+    echo "1. Docker"
+    echo "2. Docker Memory Limit"
     read -r -p "Choose: " response
     case "$response" in
     1)
-      cd /home/codeusers
+      cd /home/codeusers || return 1
       ;;
     *)
-      cd /home/codeusersmemlimit
+      cd /home/codeusersmemlimit || return 1
       ;;
     esac
-    docker container stop $user
+    docker container stop "$user"
     # OPTIONAL: Remove user setup
-    # docker compose -p $user down
+    # docker compose -p "$user" down
     ;;
   2)
-    echo Are the file is using Docker or Docker Memory Limit?
-    echo 1. Docker
-    echo 2. Docker Memory Limit
+    echo "Is this workspace using Docker or Docker Memory Limit?"
+    echo "1. Docker"
+    echo "2. Docker Memory Limit"
     read -r -p "Choose: " response
     case "$response" in
     1)
-      cd /home/codeusers
+      cd /home/codeusers || return 1
       ;;
     *)
-      cd /home/codeusersmemlimit
+      cd /home/codeusersmemlimit || return 1
       ;;
     esac
-    docker container start $user
+    docker container start "$user"
     ;;
   *)
-    echo Are the file is using Docker or Docker Memory Limit?
-    echo 1. Docker
-    echo 2. Docker Memory Limit
+    echo "Is this workspace using Docker or Docker Memory Limit?"
+    echo "1. Docker"
+    echo "2. Docker Memory Limit"
     read -r -p "Choose: " response
     case "$response" in
     1)
-      cd /home/codeusers
+      cd /home/codeusers || return 1
       ;;
     *)
-      cd /home/codeusersmemlimit
+      cd /home/codeusersmemlimit || return 1
       ;;
     esac
-    docker container stop $user
-    docker container start $user
+    docker container stop "$user"
+    docker container start "$user"
     # OPTIONAL: Remove user setup
-    # docker compose -p $user down
-    # docker compose -p $user up -d
+    # docker compose -p "$user" down
+    # docker compose -p "$user" up -d
     ;;
   esac
 }
 
 restartdocker() {
+  OPTIND=1
   while getopts "u:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -950,7 +1109,7 @@ restartdocker() {
   echo "$containers" | sed 's/^code-//'
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   container_name="code-$user"
@@ -969,10 +1128,16 @@ restartdocker() {
 }
 
 restartdockerall() {
-  docker restart $(docker ps -q)
+  running=$(docker ps -q)
+  if [[ -n "$running" ]]; then
+    docker restart $running
+  else
+    echo "No running containers to restart."
+  fi
 }
 
 resetdocker() {
+  OPTIND=1
   while getopts "u:t:" opt; do
     case $opt in
     u) user="$OPTARG" ;;
@@ -982,11 +1147,11 @@ resetdocker() {
   done
 
   if [[ -z "$user" ]]; then
-    read -p "Input User: " user
+    read -rp "Input User: " user
   fi
 
   if [[ -z "$type" ]]; then
-    echo "Are the file is using Docker or Docker Memory Limit?"
+    echo "Is this workspace using Docker or Docker Memory Limit?"
     echo "1. Docker"
     echo "2. Docker Memory Limit"
     read -r -p "Choose: " response
@@ -996,25 +1161,34 @@ resetdocker() {
 
   case "$response" in
   1)
-    cd /home/codeusers
+    cd /home/codeusers || return 1
     ;;
   *)
-    cd /home/codeusersmemlimit
+    cd /home/codeusersmemlimit || return 1
     ;;
   esac
-  docker compose -p $user down
-  docker compose -p $user up -d
+  docker compose -p "$user" down
+  docker compose -p "$user" up -d
 }
 
 # MANAGEMENTS
 
 backups() {
-  while getopts "n:h:f:s:" opt; do
+  local -a additional_paths=()
+  OPTIND=1
+  while getopts "n:h:f:s:a:" opt; do
     case $opt in
     n) name="$OPTARG" ;;
     h) hour="$OPTARG" ;;
     f) cloud_folder="$OPTARG" ;;
     s) service="$OPTARG" ;;
+    a)
+      if [[ -z "$OPTARG" || "$OPTARG" == -* ]]; then
+        echo "Invalid additional folder/file path" >&2
+        return 1
+      fi
+      additional_paths+=("$OPTARG")
+      ;;
     \?) echo "Invalid option: -$OPTARG" >&2 ;;
     esac
   done
@@ -1024,13 +1198,13 @@ backups() {
   echo "If your storage is bucket type, then name the rclone config name same as your bucket name"
   echo ""
   if [[ -z "$name" ]]; then
-    read -p "If all has been set up correctly, then input your rclone remote name: " name
+    read -rp "If all has been set up correctly, then input your rclone remote name: " name
   fi
   if [[ -z "$hour" ]]; then
-    read -p "Enter the time for backup (hour 0-23): " hour
+    read -rp "Enter the time for backup (hour 0-23): " hour
   fi
   if [[ -z "$cloud_folder" ]]; then
-    read -p "Define the backup folder name on the cloud: " cloud_folder
+    read -rp "Define the backup folder name on the cloud: " cloud_folder
   fi
   if [[ -z "$service" ]]; then
     echo ""
@@ -1045,44 +1219,56 @@ backups() {
     response="$service"
   fi
   case "$response" in
-  1)
+  1|2|3|4|5)
     backup_path="$cloud_folder"
-    list_path="$cloud_folder"
-    use_purge=false
-    ;;
-  2)
-    backup_path="$cloud_folder"
-    list_path="$cloud_folder"
-    use_purge=true
-    ;;
-  3)
-    backup_path="$cloud_folder"
-    list_path="$cloud_folder"
-    use_purge=true
-    ;;
-  4)
-    backup_path="$cloud_folder"
-    list_path="$cloud_folder"
-    use_purge=false
-    ;;
-  5)
-    backup_path="$cloud_folder"
-    list_path="$cloud_folder"
-    use_purge=false
     ;;
   *)
     echo "Invalid option"
     exit 1
     ;;
   esac
+  local additional_paths_config=""
+  local additional_path
+  local quoted_additional_path
+  for additional_path in "${additional_paths[@]}"; do
+    printf -v quoted_additional_path '%q' "$additional_path"
+    additional_paths_config+="  ${quoted_additional_path}"$'\n'
+  done
 
-  cat >/home/backup-$name-cs.sh <<EOF
+
+  cat >/home/backup-"$name"-cs.sh <<EOF
 #!/bin/bash
 date=\$(date +%Y%m%d)
 log_file="/home/backup-$name-cs.log"
 
 log_message() {
     echo "\$(date '+%Y-%m-%d %H:%M:%S') - \$1" >> "\$log_file"
+}
+additional_paths=(
+$additional_paths_config
+)
+
+resolve_additional_path() {
+    local configured_path="\$1"
+    configured_path="\${configured_path//\\{folder\\}/\$folder}"
+    configured_path="\${configured_path//\\{user\\}/\$user}"
+    printf '%s' "\$configured_path"
+}
+
+should_skip_additional_folder() {
+    local candidate="\$1"
+    local configured_path=""
+    local additional_pattern=""
+
+    for configured_path in "\${additional_paths[@]}"; do
+        additional_pattern="\${configured_path//\\{folder\\}/*}"
+        additional_pattern="\${additional_pattern//\\{user\\}/*}"
+        if [[ "\$candidate" == \$additional_pattern || "\$candidate" == \${additional_pattern}/ ]]; then
+            return 0
+        fi
+    done
+
+    return 1
 }
 
 verify_backup() {
@@ -1091,39 +1277,39 @@ verify_backup() {
     local new_file="\$folder-\$user-\$date.zip"
     local retry_count=3
     local retry_delay=5
-    
+
     for ((i=1; i<=retry_count; i++)); do
         log_message "Verification attempt \$i of \$retry_count for \$new_file"
-        
+
         if rclone lsf "$name:$backup_path/\$new_file" &>/dev/null; then
             log_message "File \$new_file verified in remote"
             return 0
         fi
-        
+
         log_message "WARNING: \$new_file not found in remote"
         if [ \$i -lt \$retry_count ]; then
             log_message "Retrying in \$retry_delay seconds..."
             sleep \$retry_delay
         fi
     done
-    
+
     return 1
 }
 
 cleanup_old_backup() {
     local folder="\$1"
     local user="\$2"
-    
+
     log_message "Checking for old backup files for \$folder-\$user"
-    
+
     backup_files=\$(rclone lsf "$name:$backup_path" --include "\$folder-\$user-*.zip" | sort -r)
-    
+
     backup_count=\$(echo "\$backup_files" | wc -l)
-    
+
     if [ "\$backup_count" -gt 2 ]; then
         log_message "Keeping last 2 backups for \$folder-\$user"
         files_to_delete=\$(echo "\$backup_files" | tail -n +3)
-        
+
         while IFS= read -r file; do
             if [ ! -z "\$file" ]; then
                 log_message "Deleting old backup: \$file"
@@ -1145,10 +1331,29 @@ for folder in codeusers codeusersmemlimit; do
         log_message "Processing \$folder"
         cd "\$folder"
         for user_folder in */; do
+            if [ ! -d "\$user_folder" ]; then
+                continue
+            fi
+            if should_skip_additional_folder "\$user_folder"; then
+                log_message "Skipping additional folder \$user_folder"
+                continue
+            fi
+
             user=\${user_folder%/}
             log_message "Backing up \$user from \$folder"
-            
-            if ! zip -r "/home/backup/\$folder-\$user-\$date.zip" "\$user_folder" -x "*/workspace/.vscode-server/*" -x "*/node_modules/*" >> "\$log_file" 2>&1; then
+
+            zip_sources=("\$user_folder")
+            for additional_path in "\${additional_paths[@]}"; do
+                resolved_path="\$(resolve_additional_path "\$additional_path")"
+                if [ -e "\$resolved_path" ]; then
+                    zip_sources+=("\$resolved_path")
+                    log_message "Including additional path \$resolved_path"
+                else
+                    log_message "WARNING: Additional path \$resolved_path not found"
+                fi
+            done
+
+            if ! zip -r "/home/backup/\$folder-\$user-\$date.zip" "\${zip_sources[@]}" -x "*/workspace/.vscode-server/*" -x "*/node_modules/*" >> "\$log_file" 2>&1; then
                 log_message "ERROR: Failed to create zip for \$user in \$folder"
                 continue
             fi
@@ -1160,14 +1365,14 @@ for folder in codeusers codeusersmemlimit; do
 
             while [ \$retry_count -lt \$max_retries ]; do
                 log_message "Upload attempt \$((retry_count + 1)) of \$max_retries"
-                
+
                 if rclone copy "/home/backup/\$folder-\$user-\$date.zip" "$name:$backup_path/" >> "\$log_file" 2>&1; then
                     if verify_backup "\$folder" "\$user"; then
                         upload_success=true
                         break
                     fi
                 fi
-                
+
                 retry_count=\$((retry_count + 1))
                 if [ \$retry_count -lt \$max_retries ]; then
                     log_message "Retry in 30 seconds..."
@@ -1197,12 +1402,12 @@ rm -rf /home/backup >> "\$log_file" 2>&1
 log_message "Backup process completed"
 EOF
 
-  chmod +x /home/backup-$name-cs.sh
+  chmod +x /home/backup-"$name"-cs.sh
   echo ""
   echo "Backup command created"
 
   crontab -l >current_cron
-  echo "0 $hour * * * /home/backup-$name-cs.sh > /home/backup-$name-cs.log 2>&1" >>current_cron
+  echo "0 $hour * * * /home/backup-$name-cs.sh >> /home/backup-$name-cs.log 2>&1" >>current_cron
   crontab current_cron
   rm current_cron
 

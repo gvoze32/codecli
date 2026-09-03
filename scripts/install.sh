@@ -34,7 +34,7 @@ install_docker() {
   sudo cat >/home/codeusers/docker-compose.yml <<EOF
 services:
   code-server:
-    image: lscr.io/linuxserver/code-server:latest
+    image: \${DOCKER_IMAGE:-lscr.io/linuxserver/code-server:latest}
     container_name: code-\${NAMA_PELANGGAN}
     environment:
       - TZ=Asia/Jakarta
@@ -53,7 +53,7 @@ install_docker_memlimit() {
   sudo cat >/home/codeusersmemlimit/docker-compose.yml <<EOF
 services:
   code-server:
-    image: lscr.io/linuxserver/code-server:latest
+    image: \${DOCKER_IMAGE:-lscr.io/linuxserver/code-server:latest}
     container_name: code-\${NAMA_PELANGGAN}
     environment:
       - TZ=Asia/Jakarta
@@ -96,11 +96,11 @@ EOF
 }
 
 second_dep() {
-  sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common
+  sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common quota
 }
 
 case $ubuntu_version in
-24.04 | 22.04)
+26.04 | 24.04 | 22.04)
   # Set NEEDRESTART frontend to avoid prompts
   sed -i "/#\$nrconf{restart} = 'i';/s/.*/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
   sed -i "s/#\$nrconf{kernelhints} = -1;/\$nrconf{kernelhints} = -1;/g" /etc/needrestart/needrestart.conf
@@ -130,7 +130,7 @@ case $ubuntu_version in
   custom_docker_size
   ;;
 *)
-  echo "Unsupported Ubuntu version. Ubuntu 24.04 and 22.04 are supported."
+  echo "Unsupported Ubuntu version. Ubuntu 26.04, 24.04 and 22.04 are supported."
   exit 1
   ;;
 esac
