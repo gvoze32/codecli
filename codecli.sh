@@ -409,6 +409,7 @@ EOF
 # CREATE DOCKER
 
 createnewdocker() {
+  local workspace_path
   OPTIND=1
   while getopts "u:p:o:i:q:" opt; do
     case $opt in
@@ -463,7 +464,12 @@ EOF
       set_user_storage_quota_for_path "$user" "$storage_limit" "/home/codeusers/$user" || true
     fi
 
-    if cd /home/codeusers/"$user"/workspace; then
+    workspace_path="/home/codeusers/${user}/workspace"
+    if [ ! -d "$workspace_path" ]; then
+      workspace_path="/home/codeusers/${user}/config/workspace"
+    fi
+
+    if cd "$workspace_path"; then
       :
       ### Your custom default bundling files goes here, it's recommended to put it on resources directory
       ### START
@@ -482,6 +488,7 @@ EOF
 # CREATE DOCKERLIMIT
 
 createnewdockermemlimit() {
+  local workspace_path
   OPTIND=1
   while getopts "u:p:o:l:c:i:q:" opt; do
     case $opt in
@@ -548,7 +555,12 @@ EOF
       set_user_storage_quota_for_path "$user" "$storage_limit" "/home/codeusersmemlimit/$user" || true
     fi
 
-    if cd /home/codeusersmemlimit/"$user"/workspace; then
+    workspace_path="/home/codeusersmemlimit/${user}/workspace"
+    if [ ! -d "$workspace_path" ]; then
+      workspace_path="/home/codeusersmemlimit/${user}/config/workspace"
+    fi
+
+    if cd "$workspace_path"; then
       :
       ### Your custom default bundling files goes here, it's recommended to put it on resources directory
       ### START
