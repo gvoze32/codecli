@@ -122,7 +122,7 @@ check_update() {
   attempt=1
 
   while [ $attempt -le $max_attempts ]; do
-    if latest_info=$(curl -s --connect-timeout 10 "$REPO_URL/codecli"); then
+    if latest_info=$(curl -s --connect-timeout 10 "$REPO_URL"); then
       latest_version=$(echo "$latest_info" | grep -o 'VERSION="[0-9]*\.[0-9]*"' | cut -d '"' -f 2)
 
       if [ -n "$latest_version" ]; then
@@ -1437,7 +1437,7 @@ updates() {
   attempt=1
 
   while [ $attempt -le $max_attempts ]; do
-    if latest_info=$(curl -s --connect-timeout 10 "$REPO_URL/codecli"); then
+    if latest_info=$(curl -s --connect-timeout 10 "$REPO_URL"); then
       latest_version=$(echo "$latest_info" | grep -o 'VERSION="[0-9]*\.[0-9]*"' | cut -d '"' -f 2)
 
       if [ -n "$latest_version" ]; then
@@ -1448,7 +1448,7 @@ updates() {
           temp_file=$(mktemp)
 
           # Download to temporary file first
-          if curl -fsSL "$REPO_URL/codecli" -o "$temp_file"; then
+          if curl -fsSL "$REPO_URL" -o "$temp_file"; then
             # Verify file was downloaded correctly
             if [ -s "$temp_file" ] && grep -q "VERSION=\"$latest_version\"" "$temp_file"; then
               # Move temporary file to final location
