@@ -463,12 +463,15 @@ EOF
       set_user_storage_quota_for_path "$user" "$storage_limit" "/home/codeusers/$user" || true
     fi
 
-    cd /home/codeusers/"$user"/config/workspace || return 1
+    if cd /home/codeusers/"$user"/workspace; then
+      :
+      ### Your custom default bundling files goes here, it's recommended to put it on resources directory
+      ### START
 
-    ### Your custom default bundling files goes here, it's recommended to put it on resources directory
-    ### START
-
-    ### END
+      ### END
+    else
+      echo -e "\033[33mWARN! Default workspace directory not found - skipping custom bundling files\033[0m"
+    fi
 
     cd ~ || true
   else
@@ -545,12 +548,15 @@ EOF
       set_user_storage_quota_for_path "$user" "$storage_limit" "/home/codeusersmemlimit/$user" || true
     fi
 
-    cd /home/codeusersmemlimit/"$user"/config/workspace || return 1
+    if cd /home/codeusersmemlimit/"$user"/workspace; then
+      :
+      ### Your custom default bundling files goes here, it's recommended to put it on resources directory
+      ### START
 
-    ### Your custom default bundling files goes here, it's recommended to put it on resources directory
-    ### START
-
-    ### END
+      ### END
+    else
+      echo -e "\033[33mWARN! Default workspace directory not found - skipping custom bundling files\033[0m"
+    fi
 
     cd ~ || true
   else
