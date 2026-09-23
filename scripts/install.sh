@@ -99,6 +99,18 @@ second_dep() {
   sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common quota
 }
 
+install_atd() {
+  echo "Installing at package and enabling atd.service..."
+  if ! sudo apt-get install -y at; then
+    echo "Failed to install the at package." >&2
+    return 1
+  fi
+  if ! sudo systemctl enable --now atd.service; then
+    echo "Failed to enable atd.service." >&2
+    return 1
+  fi
+}
+
 case $ubuntu_version in
 26.04 | 24.04 | 22.04)
   # Set NEEDRESTART frontend to avoid prompts
@@ -114,8 +126,8 @@ case $ubuntu_version in
   update_packages
 
   # Install dependencies
-  sudo apt install -y nodejs curl at git npm build-essential python3 python3-pip zip unzip
-  systemctl start atd
+  sudo apt install -y nodejs curl git npm build-essential python3 python3-pip zip unzip
+  install_atd || exit 1
 
   # Install additional dependencies
   second_dep
