@@ -99,6 +99,22 @@ second_dep() {
   sudo apt install -y apt-transport-https ca-certificates gnupg-agent software-properties-common quota
 }
 
+# NodeSource nodejs bundles npm and conflicts with the distro npm package;
+# a conflict aborts the whole apt transaction, so only add what is missing.
+install_base_deps() {
+  local packages=(curl git build-essential python3 python3-pip zip unzip)
+  if ! command -v node >/dev/null 2>&1; then
+    packages+=(nodejs)
+  fi
+  if ! command -v npm >/dev/null 2>&1; then
+    packages+=(npm)
+  fi
+  if ! sudo apt-get install -y "${packages[@]}"; then
+    echo "Failed to install dependencies: ${packages[*]}" >&2
+    return 1
+  fi
+}
+
 install_atd() {
   echo "Installing at package and enabling atd.service..."
   if ! sudo apt-get install -y at; then
@@ -126,7 +142,7 @@ case $ubuntu_version in
   update_packages
 
   # Install dependencies
-  sudo apt install -y nodejs curl git npm build-essential python3 python3-pip zip unzip
+  install_base_deps || exit 1
   install_atd || exit 1
 
   # Install additional dependencies
